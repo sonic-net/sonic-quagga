@@ -62,6 +62,7 @@ override_dh_auto_configure:
  		--enable-gcc-rdynamic \
 		--enable-pimd \
  		--with-libpam \
+        --enable-fpm \
 		$(shell dpkg-buildflags --export=configure)
 	
 	if ! diff -b -IHAVE_SNMP -IHAVE_NETSNMP -IUCD_COMPAT -IGETIFADDR debian/my/config.h.reference config.h; then \
