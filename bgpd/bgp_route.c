@@ -2162,6 +2162,11 @@ bgp_update_main (struct peer *peer, struct prefix *p, struct attr *attr,
 	  && ! CHECK_FLAG (peer->flags, PEER_FLAG_DISABLE_CONNECTED_CHECK))
 	{
 	  reason = "non-connected next-hop;";
+	  zlog_warn ("%s rcvd UPDATE about %s/%d -- DENIED due to: %s",
+	        peer->host,
+	        inet_ntop (p->family, &p->u.prefix, buf, SU_ADDRSTRLEN),
+	        p->prefixlen, reason);
+
 	  bgp_attr_flush (&new_attr);
 	  goto filtered;
 	}

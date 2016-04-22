@@ -37,6 +37,7 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #include "bgpd/bgp_attr.h"
 #include "bgpd/bgp_debug.h"
 #include "bgpd/bgp_network.h"
+#include "bgpd/bgp_nexthop.h"
 
 extern struct zebra_privs_t bgpd_privs;
 
@@ -216,6 +217,25 @@ bgp_accept (struct thread *thread)
       zlog_err ("[Error] BGP socket accept failed (%s)", safe_strerror (errno));
       return -1;
     }
+
+  peer1 = peer_lookup (NULL, &su);
+
+  /*
+   * Close incoming connection from directly connected EBGP peers until we receive
+     interface_up message from zebra
+   */
+  if (peer1 && peer1->sort == BGP_PEER_EBGP && peer1->ttl == 1
+      && sockunion_family (&su) == AF_INET
+      && ! bgp_addr_onlink_v4 (&su.sin.sin_addr))
+    {
+      zlog_warn ("bgp_accept: Close connection from %s. Interface isn't ready yet",
+		   inet_sutop (&su, buf));
+
+      close (bgp_sock);
+
+      return -1;
+    }
+
   set_nonblocking (bgp_sock);
 
   /* Set socket send buffer size */
@@ -225,7 +245,6 @@ bgp_accept (struct thread *thread)
     zlog_debug ("[Event] BGP connection from host %s", inet_sutop (&su, buf));
   
   /* Check remote IP address */
-  peer1 = peer_lookup (NULL, &su);
   if (! peer1 || peer1->status == Idle)
     {
       if (BGP_DEBUG (events, EVENTS))

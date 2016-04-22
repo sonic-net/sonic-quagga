@@ -37,6 +37,7 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #include "bgpd/bgp_fsm.h"
 #include "bgpd/bgp_packet.h"
 #include "bgpd/bgp_network.h"
+#include "bgpd/bgp_nexthop.h"
 #include "bgpd/bgp_route.h"
 #include "bgpd/bgp_dump.h"
 #include "bgpd/bgp_open.h"
@@ -672,6 +673,20 @@ bgp_start (struct peer *peer)
         plog_err (peer->log, "%s [FSM] Trying to start suppressed peer"
                   " - this is never supposed to happen!", peer->host);
       return -1;
+    }
+
+  /*
+   * Don't connect if we haven't received interface_up message from zebra
+   */
+  if (peer->sort == BGP_PEER_EBGP && peer->ttl == 1
+      && sockunion_family (&peer->su) == AF_INET
+      && ! bgp_addr_onlink_v4 (&peer->su.sin.sin_addr))
+    {
+      zlog_warn ("bgp_start: Delay connection to the remote peer %s. Our interface isn't ready yet",
+                  peer->host);
+
+      BGP_EVENT_ADD (peer, BGP_Stop);
+      return 0;
     }
 
   /* Scrub some information that might be left over from a previous,

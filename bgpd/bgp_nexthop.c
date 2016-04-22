@@ -219,6 +219,27 @@ bgp_nexthop_onlink (afi_t afi, struct attr *attr)
   return 0;
 }
 
+/* If the IPv4 address exists on connected networks return 1. */
+int
+bgp_addr_onlink_v4 (struct in_addr *addr)
+{
+  struct bgp_node *rn;
+
+  /* If zebra is not enabled return */
+  if (zlookup->sock < 0)
+    return 1;
+
+  /* Lookup the address is onlink or not. */
+  rn = bgp_node_match_ipv4 (bgp_connected_table[AFI_IP], addr);
+  if (rn)
+    {
+      bgp_unlock_node (rn);
+      return 1;
+    }
+
+  return 0;
+}
+
 #ifdef HAVE_IPV6
 /* Check specified next-hop is reachable or not. */
 static int
