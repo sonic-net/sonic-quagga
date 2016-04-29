@@ -228,7 +228,7 @@ bgp_accept (struct thread *thread)
       && sockunion_family (&su) == AF_INET
       && ! bgp_addr_onlink_v4 (&su.sin.sin_addr))
     {
-      zlog_warn ("bgp_accept: Close connection from %s. Interface isn't ready yet",
+      zlog_debug ("[Event] Close connection from %s. The interface isn't ready yet",
 		   inet_sutop (&su, buf));
 
       close (bgp_sock);

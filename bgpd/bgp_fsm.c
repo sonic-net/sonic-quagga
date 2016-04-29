@@ -682,7 +682,8 @@ bgp_start (struct peer *peer)
       && sockunion_family (&peer->su) == AF_INET
       && ! bgp_addr_onlink_v4 (&peer->su.sin.sin_addr))
     {
-      zlog_warn ("bgp_start: Delay connection to the remote peer %s. Our interface isn't ready yet",
+      if (BGP_DEBUG (fsm, FSM))
+        plog_warn (peer->log, "%s [FSM] Delay connection to the remote peer. The interface isn't ready yet",
                   peer->host);
 
       BGP_EVENT_ADD (peer, BGP_Stop);
