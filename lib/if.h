@@ -244,6 +244,7 @@ extern int if_cmp_func (struct interface *, struct interface *);
 extern struct interface *if_create (const char *name, int namelen);
 extern struct interface *if_lookup_by_index (unsigned int);
 extern struct interface *if_lookup_exact_address (struct in_addr);
+extern struct interface *if_lookup_exact_address6 (struct in6_addr src);
 extern struct interface *if_lookup_address (struct in_addr);
 extern struct interface *if_lookup_prefix (struct prefix *prefix);
 

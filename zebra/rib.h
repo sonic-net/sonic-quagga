@@ -412,7 +412,7 @@ extern int rib_lookup_ipv4_route (struct prefix_ipv4 *, union sockunion *);
 #define ZEBRA_RIB_NOTFOUND 3
 
 #ifdef HAVE_IPV6
-extern struct nexthop *nexthop_ipv6_add (struct rib *, struct in6_addr *);
+extern struct nexthop *nexthop_ipv6_add (struct rib *, struct in6_addr *, struct in6_addr *);
 #endif /* HAVE_IPV6 */
 
 extern struct vrf *vrf_lookup (u_int32_t);
@@ -458,8 +458,8 @@ static_delete_ipv4_safi (safi_t safi, struct prefix *p, struct in_addr *gate,
 #ifdef HAVE_IPV6
 extern int
 rib_add_ipv6 (int type, int flags, struct prefix_ipv6 *p,
-	      struct in6_addr *gate, unsigned int ifindex, u_int32_t vrf_id,
-	      u_int32_t metric, u_char distance, safi_t safi);
+	      struct in6_addr *gate, struct in6_addr *src, unsigned int ifindex,
+	      u_int32_t vrf_id, u_int32_t metric, u_char distance, safi_t safi);
 
 extern int
 rib_delete_ipv6 (int type, int flags, struct prefix_ipv6 *p,

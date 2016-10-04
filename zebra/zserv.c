@@ -1076,10 +1076,10 @@ zread_ipv6_add (struct zserv *client, u_short length)
     api.metric = 0;
     
   if (IN6_IS_ADDR_UNSPECIFIED (&nexthop))
-    rib_add_ipv6 (api.type, api.flags, &p, NULL, ifindex, zebrad.rtm_table_default, api.metric,
+    rib_add_ipv6 (api.type, api.flags, &p, NULL, NULL, ifindex, zebrad.rtm_table_default, api.metric,
 		  api.distance, api.safi);
   else
-    rib_add_ipv6 (api.type, api.flags, &p, &nexthop, ifindex, zebrad.rtm_table_default, api.metric,
+    rib_add_ipv6 (api.type, api.flags, &p, &nexthop, NULL, ifindex, zebrad.rtm_table_default, api.metric,
 		  api.distance, api.safi);
   return 0;
 }
