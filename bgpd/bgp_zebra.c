@@ -780,7 +780,7 @@ bgp_zebra_announce (struct prefix *p, struct bgp_info *info, struct bgp *bgp, sa
 	      && peer->su_remote->sa.sa_family == AF_INET6)
 	    nexthop = &peer->su_remote->sin6.sin6_addr;
 	  else
-	    nexthop = &info->attr->extra->mp_nexthop_local;
+	    nexthop = &info->attr->extra->mp_nexthop_global;         /* prefer to use a global next hop address until SAI is ready for link-local addresses */
 
 	  if (info->peer->nexthop.ifp)
 	    ifindex = info->peer->nexthop.ifp->ifindex;
