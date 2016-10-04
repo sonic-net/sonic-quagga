@@ -182,6 +182,8 @@ netlink_route_info_add_nh (netlink_route_info_t *ri, struct nexthop *nexthop,
       || nexthop->type == NEXTHOP_TYPE_IPV6_IFINDEX)
     {
       nhi.gateway = &nexthop->gate;
+      if (nexthop->src.ipv6.s6_addr)
+	src = &nexthop->src;
     }
 #endif /* HAVE_IPV6 */
 
@@ -191,6 +193,15 @@ netlink_route_info_add_nh (netlink_route_info_t *ri, struct nexthop *nexthop,
       if (nexthop->src.ipv4.s_addr)
 	src = &nexthop->src;
     }
+
+#ifdef HAVE_IPV6
+  if (nexthop->type == NEXTHOP_TYPE_IPV6_IFINDEX
+      || nexthop->type == NEXTHOP_TYPE_IPV6_IFNAME)
+    {
+      if (nexthop->src.ipv6.s6_addr)
+	src = &nexthop->src;
+    }
+#endif /* HAVE_IPV6 */
 
   if (!nhi.gateway && nhi.if_index == 0)
     return 0;

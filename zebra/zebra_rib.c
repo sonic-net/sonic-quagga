@@ -365,13 +365,15 @@ nexthop_ipv4_ifindex_add (struct rib *rib, struct in_addr *ipv4,
 
 #ifdef HAVE_IPV6
 struct nexthop *
-nexthop_ipv6_add (struct rib *rib, struct in6_addr *ipv6)
+nexthop_ipv6_add (struct rib *rib, struct in6_addr *ipv6, struct in6_addr *src)
 {
   struct nexthop *nexthop;
 
   nexthop = XCALLOC (MTYPE_NEXTHOP, sizeof (struct nexthop));
   nexthop->type = NEXTHOP_TYPE_IPV6;
   nexthop->gate.ipv6 = *ipv6;
+  if (src)
+    nexthop->src.ipv6 = *src;
 
   nexthop_add (rib, nexthop);
 
@@ -396,13 +398,15 @@ nexthop_ipv6_ifname_add (struct rib *rib, struct in6_addr *ipv6,
 
 static struct nexthop *
 nexthop_ipv6_ifindex_add (struct rib *rib, struct in6_addr *ipv6,
-			  unsigned int ifindex)
+			  struct in6_addr *src, unsigned int ifindex)
 {
   struct nexthop *nexthop;
 
   nexthop = XCALLOC (MTYPE_NEXTHOP, sizeof (struct nexthop));
   nexthop->type = NEXTHOP_TYPE_IPV6_IFINDEX;
   nexthop->gate.ipv6 = *ipv6;
+  if (src)
+    nexthop->src.ipv6 = *src;
   nexthop->ifindex = ifindex;
 
   nexthop_add (rib, nexthop);
@@ -2689,7 +2693,8 @@ static_delete_ipv4_safi (safi_t safi, struct prefix *p, struct in_addr *gate,
 #ifdef HAVE_IPV6
 int
 rib_add_ipv6 (int type, int flags, struct prefix_ipv6 *p,
-	      struct in6_addr *gate, unsigned int ifindex, u_int32_t vrf_id,
+	      struct in6_addr *gate, struct in6_addr *src,
+	      unsigned int ifindex, u_int32_t vrf_id,
 	      u_int32_t metric, u_char distance, safi_t safi)
 {
   struct rib *rib;
@@ -2754,9 +2759,9 @@ rib_add_ipv6 (int type, int flags, struct prefix_ipv6 *p,
   if (gate)
     {
       if (ifindex)
-	nexthop_ipv6_ifindex_add (rib, gate, ifindex);
+	nexthop_ipv6_ifindex_add (rib, gate, src, ifindex);
       else
-	nexthop_ipv6_add (rib, gate);
+	nexthop_ipv6_add (rib, gate, src);
     }
   else
     nexthop_ifindex_add (rib, ifindex);
@@ -2955,7 +2960,7 @@ static_install_ipv6 (struct prefix *p, struct static_ipv6 *si)
       switch (si->type)
 	{
 	case STATIC_IPV6_GATEWAY:
-	  nexthop_ipv6_add (rib, &si->ipv6);
+	  nexthop_ipv6_add (rib, &si->ipv6, NULL);
 	  break;
 	case STATIC_IPV6_IFNAME:
 	  nexthop_ifname_add (rib, si->ifname);
@@ -2980,7 +2985,7 @@ static_install_ipv6 (struct prefix *p, struct static_ipv6 *si)
       switch (si->type)
 	{
 	case STATIC_IPV6_GATEWAY:
-	  nexthop_ipv6_add (rib, &si->ipv6);
+	  nexthop_ipv6_add (rib, &si->ipv6, NULL);
 	  break;
 	case STATIC_IPV6_IFNAME:
 	  nexthop_ifname_add (rib, si->ifname);

@@ -248,6 +248,8 @@ vtysh_config_parse_line (const char *line)
 	config = config_get (AAA_NODE, line);
       else if (strncmp (line, "ip protocol", strlen ("ip protocol")) == 0)
 	config = config_get (PROTOCOL_NODE, line);
+      else if (strncmp (line, "ipv6 protocol", strlen ("ipv6 protocol")) == 0)
+	config = config_get (PROTOCOL_NODE, line);
       else
 	{
 	  if (strncmp (line, "log", strlen ("log")) == 0

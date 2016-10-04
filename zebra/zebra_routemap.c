@@ -359,26 +359,38 @@ ALIAS (no_match_ip_address_prefix_list,
 
 DEFUN (set_src,
        set_src_cmd,
-       "set src A.B.C.D",
+       "set src (A.B.C.D|X:X::X:X)",
        SET_STR
        "src address for route\n"
        "src address\n")
 {
   struct in_addr src;
-  struct interface *pif;
+  struct in6_addr src6;
+  struct interface *pif = NULL;
+  int is_ipv4;
+  int is_ipv6;
 
-  if (inet_pton(AF_INET, argv[0], &src) <= 0)
+  is_ipv4 = inet_pton(AF_INET, argv[0], &src) > 0;
+  is_ipv6 = inet_pton(AF_INET6, argv[0], &src6) > 0;
+
+  if ( ! (is_ipv4 || is_ipv6))
     {
       vty_out (vty, "%% not a local address%s", VTY_NEWLINE);
       return CMD_WARNING;
     }
 
-    pif = if_lookup_exact_address (src);
-    if (!pif)
-      {
-        vty_out (vty, "%% not a local address%s", VTY_NEWLINE);
-        return CMD_WARNING;
-      }
+  if (is_ipv4)
+      pif = if_lookup_exact_address (src);
+
+  if (is_ipv6)
+      pif = if_lookup_exact_address6 (src6);
+
+  if (!pif)
+    {
+      vty_out (vty, "%% not a local address%s", VTY_NEWLINE);
+      return CMD_WARNING;
+    }
+
   return zebra_route_set_add (vty, vty->index, "src", argv[0]);
 }
 
@@ -397,7 +409,7 @@ DEFUN (no_set_src,
 
 ALIAS (no_set_src,
        no_set_src_val_cmd,
-       "no set src (A.B.C.D)",
+       "no set src (A.B.C.D|X:X::X:X)",
        NO_STR
        SET_STR
        "src address for route\n"
