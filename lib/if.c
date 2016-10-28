@@ -270,6 +270,33 @@ if_lookup_exact_address (struct in_addr src)
   return NULL;
 }
 
+/* Lookup interface by IPv6 address. */
+struct interface *
+if_lookup_exact_address6 (struct in6_addr src)
+{
+  struct listnode *node;
+  struct listnode *cnode;
+  struct interface *ifp;
+  struct prefix *p;
+  struct connected *c;
+
+  for (ALL_LIST_ELEMENTS_RO (iflist, node, ifp))
+    {
+      for (ALL_LIST_ELEMENTS_RO (ifp->connected, cnode, c))
+	{
+	  p = c->address;
+
+	  if (p && p->family == AF_INET6)
+	    {
+	      if (IPV6_ADDR_SAME (&p->u.prefix6, &src))
+		return ifp;
+	    }
+	}
+    }
+  return NULL;
+}
+
+
 /* Lookup interface by IPv4 address. */
 struct interface *
 if_lookup_address (struct in_addr src)

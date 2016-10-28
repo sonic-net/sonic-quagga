@@ -353,7 +353,7 @@ connected_up_ipv6 (struct interface *ifp, struct connected *ifc)
     return;
 #endif
 
-  rib_add_ipv6 (ZEBRA_ROUTE_CONNECT, 0, &p, NULL, ifp->ifindex, RT_TABLE_MAIN,
+  rib_add_ipv6 (ZEBRA_ROUTE_CONNECT, 0, &p, NULL, NULL, ifp->ifindex, RT_TABLE_MAIN,
                 ifp->metric, 0, SAFI_UNICAST);
 
   rib_update ();
