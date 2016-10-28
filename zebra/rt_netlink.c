@@ -1818,11 +1818,8 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
             }
         }
 
-      if (src->ipv4.s_addr)
+      if (src)
         addattr_l (&req.n, sizeof req, RTA_PREFSRC, &src->ipv4, bytelen);
-
-      if (src->ipv6.s6_addr)
-        addattr_l (&req.n, sizeof req, RTA_PREFSRC, &src->ipv6, bytelen);
 
       if (rta->rta_len > RTA_LENGTH (0))
         addattr_l (&req.n, NL_PKT_BUF_SIZE, RTA_MULTIPATH, RTA_DATA (rta),
