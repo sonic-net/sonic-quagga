@@ -370,8 +370,8 @@ DEFUN (set_src,
   int is_ipv4;
   int is_ipv6;
 
-  is_ipv4 = inet_pton(AF_INET, argv[0], &src) > 0 ? 1 : 0;
-  is_ipv6 = inet_pton(AF_INET6, argv[0], &src6) > 0 ? 1 : 0;
+  is_ipv4 = inet_pton(AF_INET, argv[0], &src) > 0;
+  is_ipv6 = inet_pton(AF_INET6, argv[0], &src6) > 0;
 
   if ( ! (is_ipv4 || is_ipv6))
     {
