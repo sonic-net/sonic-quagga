@@ -366,7 +366,7 @@ DEFUN (set_src,
 {
   struct in_addr src;
   struct in6_addr src6;
-  struct interface *pif;
+  struct interface *pif = NULL;
   int is_ipv4;
   int is_ipv6;
 
@@ -380,23 +380,15 @@ DEFUN (set_src,
     }
 
   if (is_ipv4)
-    {
       pif = if_lookup_exact_address (src);
-      if (!pif)
-      {
-        vty_out (vty, "%% not a local address%s", VTY_NEWLINE);
-        return CMD_WARNING;
-      }
-    }
 
   if (is_ipv6)
-    {
       pif = if_lookup_exact_address6 (src6);
-      if (!pif)
-      {
-        vty_out (vty, "%% not a local address%s", VTY_NEWLINE);
-        return CMD_WARNING;
-      }
+
+  if (!pif)
+    {
+      vty_out (vty, "%% not a local address%s", VTY_NEWLINE);
+      return CMD_WARNING;
     }
 
   return zebra_route_set_add (vty, vty->index, "src", argv[0]);
