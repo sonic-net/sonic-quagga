@@ -994,7 +994,7 @@ bgp_zebra_withdraw (struct prefix *p, struct bgp_info *info, safi_t safi)
       /* If both global and link-local address present. */
       if (info->attr->extra->mp_nexthop_len == 32)
 	{
-	  nexthop = &info->attr->extra->mp_nexthop_global;      /* prefer to use a global next hop address until SAI is ready for link-local addresses */
+	  nexthop = &info->attr->extra->mp_nexthop_local;
 	  if (info->peer->nexthop.ifp)
 	    ifindex = info->peer->nexthop.ifp->ifindex;
 	}
