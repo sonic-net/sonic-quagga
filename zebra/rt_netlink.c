@@ -1818,7 +1818,6 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
             }
         }
 
-
       if (src && src->ipv4.s_addr)
         addattr_l (&req.n, sizeof req, RTA_PREFSRC, &src->ipv4, bytelen);
 
