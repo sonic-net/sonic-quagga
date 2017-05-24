@@ -996,6 +996,31 @@ thread_process_fd (struct thread_list *list, fd_set *fdset, fd_set *mfdset)
   return ready;
 }
 
+static void
+thread_connect_check (struct thread_list *list, fd_set *mfdset)
+{
+  struct thread *thread;
+  struct thread *next;
+  int status = 0;
+  socklen_t len = sizeof (status);
+
+  assert (list);
+
+  for (thread = list->head; thread; thread = next)
+    {
+      next = thread->next;
+      if (getsockopt(THREAD_FD (thread), SOL_SOCKET,
+		     SO_ERROR, &status, &len) == 0 && status != 0)
+	{
+	  assert (FD_ISSET (THREAD_FD (thread), mfdset));
+	  FD_CLR(THREAD_FD (thread), mfdset);
+	  thread_list_delete (list, thread);
+	  thread_list_add (&thread->master->ready, thread);
+	  thread->type = THREAD_READY;
+	}
+    }
+}
+
 /* Add all timers that have popped to the ready list. */
 static unsigned int
 thread_timer_process (struct pqueue *queue, struct timeval *timenow)
@@ -1151,6 +1176,9 @@ thread_fetch (struct thread_master *m, struct thread *fetch)
           /* Write thead. */
           thread_process_fd (&m->write, &writefd, &m->writefd);
         }
+
+      /* Verify connection status of each socket that left in read list. */
+      thread_connect_check(&m->read, &m->readfd);
 
 #if 0
       /* If any threads were made ready above (I/O or foreground timer),

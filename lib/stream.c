@@ -774,9 +774,12 @@ stream_read_try(struct stream *s, int fd, size_t size)
       s->endp += nbytes;
       return nbytes;
     }
-  /* Error: was it transient (return -2) or fatal (return -1)? */
+  /* If we reach this line and read returned OI retry error
+     connection was closed on remote side. Return 0 to allow client
+     code to handle this situation */
   if (ERRNO_IO_RETRY(errno))
-    return -2;
+    return 0;
+  /* Fatal error. */
   zlog_warn("%s: read failed on fd %d: %s", __func__, fd, safe_strerror(errno));
   return -1;
 }
