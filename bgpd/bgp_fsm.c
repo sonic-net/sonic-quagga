@@ -439,6 +439,15 @@ bgp_stop (struct peer *peer)
   safi_t safi;
   char orf_name[BUFSIZ];
 
+  if (peer_dynamic_neighbor(peer) &&
+      !(CHECK_FLAG(peer->flags, PEER_FLAG_DELETE)))
+    {
+      if (bgp_debug_neighbor_events(peer))
+        zlog_debug ("%s (dynamic neighbor) deleted", peer->host);
+      peer_delete (peer);
+      return -1;
+    }
+
   /* Can't do this in Clearing; events are used for state transitions */
   if (peer->status != Clearing)
     {
@@ -588,6 +597,14 @@ bgp_stop_with_error (struct peer *peer)
   if (peer->v_start >= (60 * 2))
     peer->v_start = (60 * 2);
 
+  if (peer_dynamic_neighbor(peer))
+  {
+    if (bgp_debug_neighbor_events(peer))
+      zlog_debug ("%s (dynamic neighbor) deleted", peer->host);
+    peer_delete (peer);
+    return -1;
+  }
+
   bgp_stop (peer);
 
   return 0;
@@ -605,6 +622,14 @@ bgp_stop_with_notify (struct peer *peer, u_char code, u_char sub_code)
   if (CHECK_FLAG (peer->sflags, PEER_STATUS_ACCEPT_PEER))
     {
       zlog_info ("%s [Event] Accepting BGP peer is deleted", peer->host);
+      peer_delete (peer);
+      return -1;
+    }
+
+  if (peer_dynamic_neighbor(peer))
+    {
+      if (bgp_debug_neighbor_events(peer))
+        zlog_debug ("%s (dynamic neighbor) deleted", peer->host);
       peer_delete (peer);
       return -1;
     }
@@ -656,6 +681,14 @@ bgp_connect_success (struct peer *peer)
 static int
 bgp_connect_fail (struct peer *peer)
 {
+  if (peer_dynamic_neighbor(peer))
+   {
+      if (bgp_debug_neighbor_events(peer))
+        zlog_debug ("%s (dynamic neighbor) deleted", peer->host);
+      peer_delete (peer);
+      return -1;
+   }
+
   bgp_stop (peer);
   return 0;
 }

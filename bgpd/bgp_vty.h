@@ -22,8 +22,10 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #define _QUAGGA_BGP_VTY_H
 
 #define CMD_AS_RANGE "<1-4294967295>"
+#define DYNAMIC_NEIGHBOR_LIMIT_RANGE "<1-5000>"
 
 extern void bgp_vty_init (void);
 extern const char *afi_safi_print (afi_t, safi_t);
+extern int bgp_config_write_listen(struct vty *vty, struct bgp *bgp);
 
 #endif /* _QUAGGA_BGP_VTY_H */
