@@ -442,8 +442,10 @@ bgp_stop (struct peer *peer)
   if (peer_dynamic_neighbor(peer) &&
       !(CHECK_FLAG(peer->flags, PEER_FLAG_DELETE)))
     {
-      if (bgp_debug_neighbor_events(peer))
-        zlog_debug ("%s (dynamic neighbor) deleted", peer->host);
+      if (BGP_DEBUG (events, EVENTS))
+      {
+          zlog_debug("%s (dynamic neighbor) deleted", peer->host);
+      }
       peer_delete (peer);
       return -1;
     }
@@ -599,8 +601,11 @@ bgp_stop_with_error (struct peer *peer)
 
   if (peer_dynamic_neighbor(peer))
   {
-    if (bgp_debug_neighbor_events(peer))
+    if (BGP_DEBUG (events, EVENTS))
+    {
       zlog_debug ("%s (dynamic neighbor) deleted", peer->host);
+    }
+
     peer_delete (peer);
     return -1;
   }
@@ -628,8 +633,11 @@ bgp_stop_with_notify (struct peer *peer, u_char code, u_char sub_code)
 
   if (peer_dynamic_neighbor(peer))
     {
-      if (bgp_debug_neighbor_events(peer))
+      if (BGP_DEBUG (events, EVENTS))
+      {
         zlog_debug ("%s (dynamic neighbor) deleted", peer->host);
+      }
+
       peer_delete (peer);
       return -1;
     }
@@ -683,8 +691,11 @@ bgp_connect_fail (struct peer *peer)
 {
   if (peer_dynamic_neighbor(peer))
    {
-      if (bgp_debug_neighbor_events(peer))
+      if (BGP_DEBUG (events, EVENTS))
+      {
         zlog_debug ("%s (dynamic neighbor) deleted", peer->host);
+      }
+
       peer_delete (peer);
       return -1;
    }

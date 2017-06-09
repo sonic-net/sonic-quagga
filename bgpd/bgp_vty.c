@@ -121,7 +121,7 @@ peer_lookup_vty (struct vty *vty, const char *ip_str)
 
   if (peer_dynamic_neighbor (peer))
     {
-      vty_out (vty, "%% Operation not allowed on a dynamic neighbor%s"，VTY_NEWLINE);
+      vty_out (vty, "%% Operation not allowed on a dynamic neighbor%s", VTY_NEWLINE);
       return NULL;
     }
   return peer;
@@ -1823,6 +1823,7 @@ DEFUN (neighbor_set_peer_group,
   union sockunion su;
   struct bgp *bgp;
   struct peer_group *group;
+  struct peer *peer = NULL;
 
   bgp = vty->index;
 
@@ -1833,10 +1834,11 @@ DEFUN (neighbor_set_peer_group,
       return CMD_WARNING;
     }
 
-  group = peer_group_lookup (bgp, argv[1]);
-  if (! group)
+  /* Disallow for dynamic neighbor. */
+  peer = peer_lookup (bgp, &su);
+  if (peer && peer_dynamic_neighbor (peer))
     {
-      vty_out (vty, "%% Configure the peer-group first%s", VTY_NEWLINE);
+      vty_out (vty, "%% Operation not allowed on a dynamic neighbor%s", VTY_NEWLINE);
       return CMD_WARNING;
     }
 
@@ -1846,6 +1848,14 @@ DEFUN (neighbor_set_peer_group,
 	       VTY_NEWLINE);
       return CMD_WARNING;
     }
+
+  group = peer_group_lookup (bgp, argv[1]);
+  if (! group)
+    {
+      vty_out (vty, "%% Configure the peer-group first%s", VTY_NEWLINE);
+      return CMD_WARNING;
+    }
+
 
   ret = peer_group_bind (bgp, &su, group, bgp_node_afi (vty), 
 			 bgp_node_safi (vty), &as);
@@ -4685,15 +4695,6 @@ bgp_clear_vty (struct vty *vty, const char *name, afi_t afi, safi_t safi,
           vty_out (vty, "No BGP process is configured%s", VTY_NEWLINE);
           return CMD_WARNING;
         }
-
-      /* Disallow for dynamic neighbor. */
-      peer = peer_lookup (bgp, &su);
-      if (peer && peer_dynamic_neighbor (peer))
-        {
-          vty_out (vty, "%% Operation not allowed on a dynamic neighbor%s",
-	           VTY_NEWLINE);
-          return CMD_WARNING;
-        }
     }
 
   return bgp_clear (vty, bgp, afi, safi, sort, stype, arg);
@@ -7256,6 +7257,16 @@ bgp_show_summary (struct vty *vty, struct bgp *bgp, int afi, int safi)
   else
     vty_out (vty, "No %s neighbor is configured%s",
 	     afi == AFI_IP ? "IPv4" : "IPv6", VTY_NEWLINE);
+
+  if (dn_count)
+    {
+      vty_out(vty, "* - dynamic neighbor%s", VTY_NEWLINE);
+      vty_out(vty,
+              "%d %s dynamic neighbor(s), limit %d%s",
+              dn_count, afi == AFI_IP ? "IPv4" : "IPv6",
+              bgp->dynamic_neighbors_limit, VTY_NEWLINE);
+    }
+
   return CMD_SUCCESS;
 }
 
@@ -8238,16 +8249,6 @@ bgp_show_neighbor_vty (struct vty *vty, const char *name,
 
   if (bgp)
     bgp_show_neighbor (vty, bgp, type, &su);
-
-
-  if (dn_count)
-    {
-      vty_out(vty, "* - dynamic neighbor%s", VTY_NEWLINE);
-      vty_out(vty,
-              "%d %s dynamic neighbor(s), limit %d%s",
-              dn_count, afi == AFI_IP ? "IPv4" : "IPv6",
-              bgp->dynamic_neighbors_limit, VTY_NEWLINE);
-    }
 
   return CMD_SUCCESS;
 }
