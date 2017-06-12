@@ -220,7 +220,6 @@ bgp_accept (struct thread *thread)
 
   peer1 = peer_lookup (NULL, &su);
 
-
   /*
    * Close incoming connection from directly connected EBGP peers until we receive
      interface_up message from zebra
