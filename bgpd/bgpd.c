@@ -1802,7 +1802,6 @@ peer_group_listen_range_add (struct peer_group *group, struct prefix *range)
   if (! group->conf->as)
     return BGP_ERR_PEER_GROUP_NO_REMOTE_AS;
 
-
   /* Ensure no duplicates. Currently we don't care about overlaps. */
   for (ALL_LIST_ELEMENTS (group->listen_range[afi], node, nnode, prefix))
     {

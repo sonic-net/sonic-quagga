@@ -1859,7 +1859,6 @@ DEFUN (neighbor_set_peer_group,
       return CMD_WARNING;
     }
 
-
   ret = peer_group_bind (bgp, &su, group, bgp_node_afi (vty), 
 			 bgp_node_safi (vty), &as);
 
@@ -1960,7 +1959,6 @@ DEFUN (no_bgp_listen_limit,
   bgp_listen_limit_unset (bgp);
   return CMD_SUCCESS;
 }
-
 
 /*
  * Check if this listen range is already configured. Check for exact
