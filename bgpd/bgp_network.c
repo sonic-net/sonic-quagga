@@ -243,14 +243,32 @@ bgp_accept (struct thread *thread)
 
   if (BGP_DEBUG (events, EVENTS))
     zlog_debug ("[Event] BGP connection from host %s", inet_sutop (&su, buf));
-  
+ 
+  if (! peer1)
+  {
+    peer1 = peer_lookup_dynamic_neighbor (NULL, &su);
+    if (peer1)
+      {
+        /* Dynamic neighbor has been created, let it proceed */
+        peer1->fd = bgp_sock;
+        bgp_fsm_change_status(peer1, Active);
+        BGP_TIMER_OFF(peer1->t_start); /* created in peer_create() */
+
+        if (peer_active (peer1))
+            BGP_EVENT_ADD (peer1, TCP_connection_open);
+
+        return 0;
+      }
+  }
+
   /* Check remote IP address */
   if (! peer1 || peer1->status == Idle)
     {
       if (BGP_DEBUG (events, EVENTS))
 	{
 	  if (! peer1)
-	    zlog_debug ("[Event] BGP connection IP address %s is not configured",
+	    zlog_debug ("[Event] BGP connection IP address %s rejected - not configured"
+                        " and not valid for dynamic",
 		       inet_sutop (&su, buf));
 	  else
 	    zlog_debug ("[Event] BGP connection IP address %s is Idle state",

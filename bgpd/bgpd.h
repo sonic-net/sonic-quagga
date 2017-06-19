@@ -23,6 +23,7 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 
 /* For union sockunion.  */
 #include "sockunion.h"
+#include "openbsd-queue.h"
 
 /* Typedef BGP specific types.  */
 typedef u_int32_t as_t;
@@ -62,6 +63,50 @@ struct bgp_master
 #define BGP_OPT_NO_LISTEN                (1 << 3)
 };
 
+enum bgp_af_index
+{
+  BGP_AF_START,
+  BGP_AF_IPV4_UNICAST = BGP_AF_START,
+  BGP_AF_IPV4_MULTICAST,
+  BGP_AF_IPV4_VPN,
+  BGP_AF_IPV6_UNICAST,
+  BGP_AF_IPV6_MULTICAST,
+  BGP_AF_IPV6_VPN,
+  BGP_AF_IPV4_ENCAP,
+  BGP_AF_IPV6_ENCAP,
+  BGP_AF_L2VPN_EVPN,
+  BGP_AF_IPV4_LBL_UNICAST,
+  BGP_AF_IPV6_LBL_UNICAST,
+  BGP_AF_MAX
+};
+
+struct peer_af
+{
+  /* back pointer to the peer */
+  struct peer *peer;
+
+  /* which subgroup the peer_af belongs to */
+  struct update_subgroup *subgroup;
+
+  /* for being part of an update subgroup's peer list */
+  LIST_ENTRY(peer_af) subgrp_train;
+
+  /* for being part of a packet's peer list */
+  LIST_ENTRY(peer_af) pkt_train;
+
+  struct bpacket *next_pkt_to_send;
+
+  /*
+   * Trigger timer for bgp_announce_route().
+   */
+  struct thread *t_announce_route;
+
+  afi_t afi;
+  safi_t safi;
+  int afid;
+};
+
+
 /* BGP instance structure.  */
 struct bgp 
 {
@@ -82,6 +127,12 @@ struct bgp
 
   /* BGP peer group.  */
   struct list *group;
+
+  /* The maximum number of BGP dynamic neighbors that can be created */
+  int dynamic_neighbors_limit;
+
+    /* The current number of BGP dynamic neighbors */
+  int dynamic_neighbors_count;
 
   /* BGP route-server-clients. */
   struct list *rsclient;
@@ -185,6 +236,9 @@ struct peer_group
   
   /* Peer-group client list. */
   struct list *peer;
+
+  /** Dynamic neighbor listening ranges */
+  struct list *listen_range[AFI_MAX];
 
   /* Peer-group config */
   struct peer *conf;
@@ -290,6 +344,9 @@ struct peer
   struct peer_group *group;
   u_char af_group[AFI_MAX][SAFI_MAX];
 
+  /* BGP peer_af structures, per configured AF on this peer */
+  struct peer_af *peer_af_array[BGP_AF_MAX];
+
   /* Peer's remote AS number. */
   as_t as;			
 
@@ -393,6 +450,8 @@ struct peer
 #define PEER_FLAG_DISABLE_CONNECTED_CHECK   (1 << 6) /* disable-connected-check */
 #define PEER_FLAG_LOCAL_AS_NO_PREPEND       (1 << 7) /* local-as no-prepend */
 #define PEER_FLAG_LOCAL_AS_REPLACE_AS       (1 << 8) /* local-as no-prepend replace-as */
+#define PEER_FLAG_DELETE                    (1 << 9) /* mark the peer for deleting */
+#define PEER_FLAG_DYNAMIC_NEIGHBOR          (1 << 10) /* dynamic neighbor */
 
   /* NSF mode (graceful restart) */
   u_char nsf[AFI_MAX][SAFI_MAX];
@@ -775,6 +834,11 @@ struct bgp_nlri
 /* Check AS path loop when we send NLRI.  */
 /* #define BGP_SEND_ASPATH_CHECK */
 
+/* BGP Dynamic Neighbors feature */
+#define BGP_DYNAMIC_NEIGHBORS_LIMIT_DEFAULT    100
+#define BGP_DYNAMIC_NEIGHBORS_LIMIT_MIN          1
+#define BGP_DYNAMIC_NEIGHBORS_LIMIT_MAX       5000
+
 /* Flag for peer_clear_soft().  */
 enum bgp_clear_type
 {
@@ -830,6 +894,10 @@ enum bgp_clear_type
 #define BGP_ERR_NO_IBGP_WITH_TTLHACK		-31
 #define BGP_ERR_MAX				-32
 #define BGP_ERR_CANNOT_HAVE_LOCAL_AS_SAME_AS_REMOTE_AS    -33
+#define BGP_ERR_INVALID_DYNAMIC_NEIGHBORS_LIMIT -35
+#define BGP_ERR_DYNAMIC_NEIGHBORS_RANGE_EXISTS  -36
+#define BGP_ERR_DYNAMIC_NEIGHBORS_RANGE_NOT_FOUND -37
+#define BGP_ERR_INVALID_FOR_DYNAMIC_PEER        -38
 
 extern struct bgp_master *bm;
 
@@ -844,6 +912,16 @@ extern int bgp_nexthop_set (union sockunion *, union sockunion *,
 		     struct bgp_nexthop *, struct peer *);
 extern struct bgp *bgp_get_default (void);
 extern struct bgp *bgp_lookup (as_t, const char *);
+
+extern struct peer *peer_create_bind_dynamic_neighbor (struct bgp *,
+                            union sockunion *, struct peer_group *);
+extern struct prefix *peer_group_lookup_dynamic_neighbor_range (
+                             struct peer_group *, struct prefix *);
+extern struct peer_group *peer_group_lookup_dynamic_neighbor (struct bgp *,
+                             struct prefix *, struct prefix **);
+extern struct peer *peer_lookup_dynamic_neighbor (struct bgp *,
+                             union sockunion *);
+extern void peer_drop_dynamic_neighbor (struct peer *);
 extern struct bgp *bgp_lookup_by_name (const char *);
 extern struct peer *peer_lookup (struct bgp *, union sockunion *);
 extern struct peer_group *peer_group_lookup (struct bgp *, const char *);
@@ -897,6 +975,9 @@ extern int bgp_timers_unset (struct bgp *);
 extern int bgp_default_local_preference_set (struct bgp *, u_int32_t);
 extern int bgp_default_local_preference_unset (struct bgp *);
 
+extern int bgp_listen_limit_set (struct bgp *, int);
+extern int bgp_listen_limit_unset (struct bgp *);
+
 extern int peer_rsclient_active (struct peer *);
 
 extern int peer_remote_as (struct bgp *, union sockunion *, as_t *, afi_t, safi_t);
@@ -904,6 +985,7 @@ extern int peer_group_remote_as (struct bgp *, const char *, as_t *);
 extern int peer_delete (struct peer *peer);
 extern int peer_group_delete (struct peer_group *);
 extern int peer_group_remote_as_delete (struct peer_group *);
+extern int peer_group_listen_range_add(struct peer_group *, struct prefix *);
 
 extern int peer_activate (struct peer *, afi_t, safi_t);
 extern int peer_deactivate (struct peer *, afi_t, safi_t);
@@ -915,6 +997,9 @@ extern int peer_group_unbind (struct bgp *, struct peer *, struct peer_group *,
 
 extern int peer_flag_set (struct peer *, u_int32_t);
 extern int peer_flag_unset (struct peer *, u_int32_t);
+
+extern struct peer_af * peer_af_create (struct peer *, afi_t, safi_t);
+extern struct peer_af * peer_af_find (struct peer *, afi_t, safi_t);
 
 extern int peer_af_flag_set (struct peer *, afi_t, safi_t, u_int32_t);
 extern int peer_af_flag_unset (struct peer *, afi_t, safi_t, u_int32_t);
@@ -984,5 +1069,64 @@ extern int peer_clear_soft (struct peer *, afi_t, safi_t, enum bgp_clear_type);
 
 extern int peer_ttl_security_hops_set (struct peer *, int);
 extern int peer_ttl_security_hops_unset (struct peer *);
+
+static inline int
+peer_group_af_configured (struct peer_group *group)
+{
+  struct peer *peer = group->conf;
+
+  if (peer->afc[AFI_IP][SAFI_UNICAST]
+      || peer->afc[AFI_IP][SAFI_MULTICAST]
+      || peer->afc[AFI_IP][SAFI_MPLS_VPN]
+      || peer->afc[AFI_IP6][SAFI_UNICAST]
+      || peer->afc[AFI_IP6][SAFI_MULTICAST])
+    return 1;
+  return 0;
+}
+
+static inline int
+afindex (afi_t afi, safi_t safi)
+{
+  switch (afi)
+    {
+    case AFI_IP:
+      switch (safi)
+	{
+	case SAFI_UNICAST:
+	  return BGP_AF_IPV4_UNICAST;
+	  break;
+	case SAFI_MULTICAST:
+	  return BGP_AF_IPV4_MULTICAST;
+	  break;
+	case SAFI_MPLS_VPN:
+	  return BGP_AF_IPV4_VPN;
+	  break;
+	default:
+	  return BGP_AF_MAX;
+	  break;
+	}
+      break;
+    case AFI_IP6:
+      switch (safi)
+	{
+	case SAFI_UNICAST:
+	  return BGP_AF_IPV6_UNICAST;
+	  break;
+	case SAFI_MULTICAST:
+	  return BGP_AF_IPV6_MULTICAST;
+	  break;
+	default:
+	  return BGP_AF_MAX;
+	  break;
+	}
+    }
+}
+
+
+static inline int
+peer_dynamic_neighbor (struct peer *peer)
+{
+  return (CHECK_FLAG(peer->flags, PEER_FLAG_DYNAMIC_NEIGHBOR)) ? 1 : 0;
+}
 
 #endif /* _QUAGGA_BGPD_H */

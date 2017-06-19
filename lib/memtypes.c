@@ -93,6 +93,7 @@ struct memory_list memory_list_bgp[] =
   { MTYPE_BGP_LISTENER,		"BGP listen socket details"	},
   { MTYPE_BGP_PEER,		"BGP peer"			},
   { MTYPE_BGP_PEER_HOST,	"BGP peer hostname"		},
+  { MTYPE_BGP_PEER_AF,		"BGP peer af"			},
   { MTYPE_PEER_GROUP,		"Peer group"			},
   { MTYPE_PEER_DESC,		"Peer description"		},
   { MTYPE_PEER_PASSWORD,	"Peer password string"		},
