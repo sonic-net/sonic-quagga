@@ -37,7 +37,8 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #include "bgpd/bgp_aspath.h"
 #include "bgpd/bgp_vty.h"
 
-extern unsigned char bgp_gr_f_bit;
+/* BGP Graceful restart Forwarding State (F) bit state */
+unsigned char bgp_gr_f_bit = 0x00;
 
 /* BGP-4 Multiprotocol Extentions lead us to the complex world. We can
    negotiate remote peer supports extentions or not. But if

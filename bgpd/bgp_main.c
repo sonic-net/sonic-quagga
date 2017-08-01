@@ -119,7 +119,7 @@ int vty_port = BGP_VTY_PORT;
 char *vty_addr = NULL;
 
 /* BGP Graceful restart Forwarding State (F) bit state */
-unsigned char bgp_gr_f_bit = 0x00;
+extern unsigned char bgp_gr_f_bit;
 
 /* privileges */
 static zebra_capabilities_t _caps_p [] =  

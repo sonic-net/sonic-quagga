@@ -83,7 +83,7 @@ start()
 
         if [ "$1" = "bgpd" -a "$FAST_REBOOT" = "yes" ];
         then
-            EXTRA_DAEMON_FLAGS+="-F "
+            EXTRA_DAEMON_FLAGS+="-F"
         fi
 
         if [ "$1" = "watchquagga" ]; then
@@ -100,8 +100,8 @@ start()
                 --pidfile=`pidfile $1` \
                 --exec "$D_PATH/$1" \
                 -- \
-                EXTRA_DAEMON_FLAGS \
-                `eval echo "$""$1""_options"`
+                `eval echo "$""$1""_options"` \
+                "$EXTRA_DAEMON_FLAGS"
         fi
 }
 
