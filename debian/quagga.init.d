@@ -79,6 +79,13 @@ start()
         echo -n " $1"
         if ! check_daemon $1; then return; fi
 
+        EXTRA_DAEMON_FLAGS=""
+
+        if [ "$1" = "bgpd" -a "$FAST_REBOOT" = "yes" ];
+        then
+            EXTRA_DAEMON_FLAGS+="-F "
+        fi
+
         if [ "$1" = "watchquagga" ]; then
             start-stop-daemon \
                 --oknodo \
@@ -93,6 +100,7 @@ start()
                 --pidfile=`pidfile $1` \
                 --exec "$D_PATH/$1" \
                 -- \
+                EXTRA_DAEMON_FLAGS \
                 `eval echo "$""$1""_options"`
         fi
 }
@@ -264,6 +272,16 @@ if [ ! -d /var/run/quagga ]; then
     chown quagga:quagga /var/run/quagga
     chmod 755 /var/run/quagga
 fi
+
+# Check Fast-Reboot case
+case "$(cat /proc/cmdline)" in
+  *fast-reboot*)
+     FAST_REBOOT='yes'
+    ;;
+  *)
+     FAST_REBOOT='no'
+    ;;
+esac
 
 case "$1" in
     start)
