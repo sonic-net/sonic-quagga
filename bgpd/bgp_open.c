@@ -37,6 +37,9 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #include "bgpd/bgp_aspath.h"
 #include "bgpd/bgp_vty.h"
 
+/* BGP Graceful restart Forwarding State (F) bit state */
+unsigned char bgp_gr_f_bit = 0x00;
+
 /* BGP-4 Multiprotocol Extentions lead us to the complex world. We can
    negotiate remote peer supports extentions or not. But if
    remote-peer doesn't supports negotiation process itself.  We would
@@ -1049,7 +1052,7 @@ bgp_open_capability (struct stream *s, struct peer *peer)
             {
               stream_putw (s, afi);
               stream_putc (s, safi);
-              stream_putc (s, 0); //Forwarding is not retained as of now.
+              stream_putc (s, bgp_gr_f_bit); /* report retained state by request */
             }
     }
 

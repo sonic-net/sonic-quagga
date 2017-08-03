@@ -67,6 +67,7 @@ static const struct option longopts[] =
   { "group",       required_argument, NULL, 'g'},
   { "version",     no_argument,       NULL, 'v'},
   { "dryrun",      no_argument,       NULL, 'C'},
+  { "f_bit",       no_argument,       NULL, 'F'},
   { "help",        no_argument,       NULL, 'h'},
   { 0 }
 };
@@ -117,6 +118,9 @@ static const char *pid_file = PATH_BGPD_PID;
 int vty_port = BGP_VTY_PORT;
 char *vty_addr = NULL;
 
+/* BGP Graceful restart Forwarding State (F) bit state */
+extern unsigned char bgp_gr_f_bit;
+
 /* privileges */
 static zebra_capabilities_t _caps_p [] =  
 {
@@ -164,6 +168,7 @@ redistribution between different routing protocols.\n\n\
 -g, --group        Group to run as\n\
 -v, --version      Print program version\n\
 -C, --dryrun       Check configuration for validity and exit\n\
+-F, --f_bit        Set Forwarding State (F) bit for BGP graceful restart\n\
 -h, --help         Display this help and exit\n\
 \n\
 Report bugs to %s\n", progname, ZEBRA_BUG_ADDRESS);
@@ -345,7 +350,7 @@ main (int argc, char **argv)
   /* Command line argument treatment. */
   while (1) 
     {
-      opt = getopt_long (argc, argv, "df:i:z:hp:l:A:P:rnu:g:vC", longopts, 0);
+      opt = getopt_long (argc, argv, "df:i:z:hp:l:A:P:rnu:g:vCF", longopts, 0);
     
       if (opt == EOF)
 	break;
@@ -410,6 +415,9 @@ main (int argc, char **argv)
 	case 'C':
 	  dryrun = 1;
 	  break;
+        case 'F':
+          bgp_gr_f_bit = 0x80;
+          break;
 	case 'h':
 	  usage (progname, 0);
 	  break;
