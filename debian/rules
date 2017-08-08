@@ -37,6 +37,7 @@ override_dh_auto_configure:
 	   exit 1; \
 	fi
 	
+	dh_autoreconf_clean
 	dh_autoreconf
 	dh_auto_configure -- \
 		--enable-exampledir=/usr/share/doc/quagga/examples/ \
