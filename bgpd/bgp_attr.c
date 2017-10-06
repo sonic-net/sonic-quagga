@@ -1087,7 +1087,7 @@ bgp_attr_nexthop (struct bgp_attr_parser_args *args)
   struct attr *const attr = args->attr;
   const bgp_size_t length = args->length;
   
-  in_addr_t nexthop_h, nexthop_n;
+  in_addr_t nexthop_n;
 
   /* Check nexthop attribute length. */
   if (length != 4)
@@ -1101,7 +1101,6 @@ bgp_attr_nexthop (struct bgp_attr_parser_args *args)
     }
 
   nexthop_n = stream_get_ipv4 (peer->ibuf);
-  nexthop_h = ntohl (nexthop_n);
   attr->nexthop.s_addr = nexthop_n;
   attr->flag |= ATTR_FLAG_BIT (BGP_ATTR_NEXT_HOP);
 
