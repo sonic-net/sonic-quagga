@@ -122,6 +122,7 @@ bgp_info_nexthop_cmp (struct bgp_info *bi1, struct bgp_info *bi2)
               compare = IPV4_ADDR_CMP (&ae1->mp_nexthop_global_in,
                                        &ae2->mp_nexthop_global_in);
               break;
+#ifdef HAVE_IPV6
             case 16:
               compare = IPV6_ADDR_CMP (&ae1->mp_nexthop_global,
                                        &ae2->mp_nexthop_global);
@@ -133,9 +134,11 @@ bgp_info_nexthop_cmp (struct bgp_info *bi1, struct bgp_info *bi2)
                 compare = IPV6_ADDR_CMP (&ae1->mp_nexthop_local,
                                          &ae2->mp_nexthop_local);
               break;
+#endif /* HAVE_IPV6 */
             }
         }
 
+#ifdef HAVE_IPV6
       /* This can happen if one IPv6 peer sends you global and link-local
        * nexthops but another IPv6 peer only sends you global
        */
@@ -151,6 +154,7 @@ bgp_info_nexthop_cmp (struct bgp_info *bi1, struct bgp_info *bi2)
                 compare = 1;
             }
         }
+#endif /* HAVE_IPV6 */
     }
 
   return compare;
