@@ -2045,7 +2045,9 @@ bgp_attr_parse (struct peer *peer, struct attr *attr, bgp_size_t size,
       && !CHECK_FLAG (attr->flag, ATTR_FLAG_BIT (BGP_ATTR_MP_REACH_NLRI)))
     {
 
-      if (IPV4_NET0 (attr->nexthop.s_addr) || IPV4_NET127 (attr->nexthop.s_addr) || IPV4_CLASS_DE (attr->nexthop.s_addr))
+      in_addr_t nexthop_h;
+      nexthop_h = ntohl(attr->nexthop.s_addr);
+      if (IPV4_NET0 (nexthop_h) || IPV4_NET127 (nexthop_h) || IPV4_CLASS_DE (nexthop_h))
         {
           char buf[INET_ADDRSTRLEN];
           inet_ntop (AF_INET, &attr->nexthop.s_addr, buf, INET_ADDRSTRLEN);
