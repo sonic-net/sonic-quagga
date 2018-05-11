@@ -1087,7 +1087,7 @@ bgp_attr_nexthop (struct bgp_attr_parser_args *args)
   struct attr *const attr = args->attr;
   const bgp_size_t length = args->length;
   
-  in_addr_t nexthop_h, nexthop_n;
+  in_addr_t nexthop_n;
 
   /* Check nexthop attribute length. */
   if (length != 4)
@@ -1100,23 +1100,7 @@ bgp_attr_nexthop (struct bgp_attr_parser_args *args)
                                  args->total);
     }
 
-  /* According to section 6.3 of RFC4271, syntactically incorrect NEXT_HOP
-     attribute must result in a NOTIFICATION message (this is implemented below).
-     At the same time, semantically incorrect NEXT_HOP is more likely to be just
-     logged locally (this is implemented somewhere else). The UPDATE message
-     gets ignored in any of these cases. */
   nexthop_n = stream_get_ipv4 (peer->ibuf);
-  nexthop_h = ntohl (nexthop_n);
-  if (IPV4_NET0 (nexthop_h) || IPV4_NET127 (nexthop_h) || IPV4_CLASS_DE (nexthop_h))
-    {
-      char buf[INET_ADDRSTRLEN];
-      inet_ntop (AF_INET, &nexthop_n, buf, INET_ADDRSTRLEN);
-      zlog (peer->log, LOG_ERR, "Martian nexthop %s", buf);
-      return bgp_attr_malformed (args,
-                                 BGP_NOTIFY_UPDATE_INVAL_NEXT_HOP,
-                                 args->total);
-    }
-
   attr->nexthop.s_addr = nexthop_n;
   attr->flag |= ATTR_FLAG_BIT (BGP_ATTR_NEXT_HOP);
 
@@ -2044,7 +2028,37 @@ bgp_attr_parse (struct peer *peer, struct attr *attr, bgp_size_t size,
         return ret;
       }
   }
-  
+
+  /*
+   * According to section 6.3 of RFC4271, syntactically incorrect NEXT_HOP
+   * attribute must result in a NOTIFICATION message (this is implemented below).
+   * At the same time, semantically incorrect NEXT_HOP is more likely to be just
+   * logged locally (this is implemented somewhere else). The UPDATE message
+   * gets ignored in any of these cases.
+   *
+   * According to section 1.3 of RFC2858, an UPDATE message that carries no NLRI,
+   * other than the one encoded in the MP_REACH_NLRI attribute, should not carry
+   * the NEXT_HOP attribute. If such a message contains the NEXT_HOP attribute,
+   * the BGP speaker that receives the message should ignore this attribute.
+   */
+  if (CHECK_FLAG (attr->flag, ATTR_FLAG_BIT (BGP_ATTR_NEXT_HOP))
+      && !CHECK_FLAG (attr->flag, ATTR_FLAG_BIT (BGP_ATTR_MP_REACH_NLRI)))
+    {
+
+      in_addr_t nexthop_h;
+      nexthop_h = ntohl(attr->nexthop.s_addr);
+      if (IPV4_NET0 (nexthop_h) || IPV4_NET127 (nexthop_h) || IPV4_CLASS_DE (nexthop_h))
+        {
+          char buf[INET_ADDRSTRLEN];
+          inet_ntop (AF_INET, &attr->nexthop.s_addr, buf, INET_ADDRSTRLEN);
+          zlog (peer->log, LOG_ERR, "Martian nexthop %s", buf);
+          bgp_notify_send (peer,
+                           BGP_NOTIFY_UPDATE_ERR,
+                           BGP_NOTIFY_UPDATE_INVAL_NEXT_HOP);
+          return BGP_ATTR_PARSE_ERROR;
+        }
+    }
+
   /* 
    * At this place we can see whether we got AS4_PATH and/or
    * AS4_AGGREGATOR from a 16Bit peer and act accordingly.
