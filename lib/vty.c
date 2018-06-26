@@ -1766,10 +1766,9 @@ vty_accept (struct thread *thread)
   if (ret < 0)
     zlog (NULL, LOG_INFO, "can't set sockopt to vty_sock : %s", 
 	  safe_strerror (errno));
-#if 0
-  zlog (NULL, LOG_INFO, "Vty connection from %s",
+
+  zlog (NULL, LOG_DEBUG, "Vty connection from %s",
 	sockunion2str (&su, buf, SU_ADDRSTRLEN));
-#endif
 
   vty_create (vty_sock, &su);
 
