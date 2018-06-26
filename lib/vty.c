@@ -1767,7 +1767,7 @@ vty_accept (struct thread *thread)
     zlog (NULL, LOG_INFO, "can't set sockopt to vty_sock : %s", 
 	  safe_strerror (errno));
 
-  zlog (NULL, LOG_INFO, "Vty connection from %s",
+  zlog (NULL, LOG_DEBUG, "Vty connection from %s",
 	sockunion2str (&su, buf, SU_ADDRSTRLEN));
 
   vty_create (vty_sock, &su);
