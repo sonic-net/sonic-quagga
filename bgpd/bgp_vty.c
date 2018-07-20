@@ -437,6 +437,45 @@ ALIAS (no_router_bgp,
        "BGP view\n"
        "view name\n")
 
+/* bgp session-dscp */
+
+DEFUN (bgp_session_dscp,
+       bgp_session_dscp_cmd,
+       "bgp session-dscp DSCP",
+        BGP_STR
+       "Override default (C0) bgp session ip dscp field\n"
+       "Manually configured dscp parameter\n")
+{
+  struct bgp *bgp;
+
+  u_char value = (u_char)strtol(argv[0], NULL, 16);
+  if ((value == 0 && errno == EINVAL) || (value > 0x3f))
+  {
+    vty_out (vty, "%% Malformed bgp session-dscp parameter%s", VTY_NEWLINE);
+    return CMD_WARNING;
+  }
+
+  bgp = vty->index;
+  bgp->tcp_dscp = value << 2;
+
+  return CMD_SUCCESS;
+}
+
+DEFUN (no_bgp_session_dscp,
+       no_bgp_session_dscp_cmd,
+       "no bgp session-dscp",
+       NO_STR
+       BGP_STR
+       "Override default (C0) bgp session ip dscp field\n")
+{
+  struct bgp *bgp;
+
+  bgp = vty->index;
+  bgp->tcp_dscp = IPTOS_PREC_INTERNETCONTROL;
+
+  return CMD_SUCCESS;
+}
+
 /* BGP router-id.  */
 
 DEFUN (bgp_router_id,
@@ -9645,6 +9684,10 @@ bgp_vty_init (void)
   /* "no router bgp" commands. */
   install_element (CONFIG_NODE, &no_router_bgp_cmd);
   install_element (CONFIG_NODE, &no_router_bgp_view_cmd);
+
+  /* "bgp session-dscp command */
+  install_element (BGP_NODE, &bgp_session_dscp_cmd);
+  install_element (BGP_NODE, &no_bgp_session_dscp_cmd);
 
   /* "bgp router-id" commands. */
   install_element (BGP_NODE, &bgp_router_id_cmd);

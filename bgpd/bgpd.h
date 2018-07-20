@@ -223,6 +223,8 @@ struct bgp
     u_int16_t maxpaths_ebgp;
     u_int16_t maxpaths_ibgp;
   } maxpaths[AFI_MAX][SAFI_MAX];
+
+  u_char tcp_dscp;
 };
 
 /* BGP peer-group support. */

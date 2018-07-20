@@ -420,10 +420,10 @@ bgp_connect (struct peer *peer)
   if (bgpd_privs.change (ZPRIVS_RAISE))
     zlog_err ("%s: could not raise privs", __func__);
   if (sockunion_family (&peer->su) == AF_INET)
-    setsockopt_ipv4_tos (peer->fd, IPTOS_PREC_INTERNETCONTROL);
+    setsockopt_ipv4_tos (peer->fd, peer->bgp->tcp_dscp);
 # ifdef HAVE_IPV6
   else if (sockunion_family (&peer->su) == AF_INET6)
-    setsockopt_ipv6_tclass (peer->fd, IPTOS_PREC_INTERNETCONTROL);
+    setsockopt_ipv6_tclass (peer->fd, peer->bgp->tcp_dscp);
 # endif
   if (bgpd_privs.change (ZPRIVS_LOWER))
     zlog_err ("%s: could not lower privs", __func__);
