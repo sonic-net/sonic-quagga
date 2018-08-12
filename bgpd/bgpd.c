@@ -2104,6 +2104,7 @@ bgp_create (as_t *as, const char *name)
   bgp->stalepath_time = BGP_DEFAULT_STALEPATH_TIME;
   bgp->dynamic_neighbors_limit = BGP_DYNAMIC_NEIGHBORS_LIMIT_DEFAULT;
   bgp->dynamic_neighbors_count = 0;
+  bgp->tcp_dscp = IPTOS_PREC_INTERNETCONTROL;
 
   bgp->as = *as;
 
@@ -5628,6 +5629,11 @@ bgp_config_write (struct vty *vty)
       /* BGP fast-external-failover. */
       if (CHECK_FLAG (bgp->flags, BGP_FLAG_NO_FAST_EXT_FAILOVER))
 	vty_out (vty, " no bgp fast-external-failover%s", VTY_NEWLINE); 
+
+      /* BGP session-dscp */
+      if (bgp->tcp_dscp != IPTOS_PREC_INTERNETCONTROL)
+	vty_out (vty, " bgp session-dscp %02X%s", (bgp->tcp_dscp >> 2),
+		 VTY_NEWLINE);
 
       /* BGP router ID. */
       if (CHECK_FLAG (bgp->config, BGP_CONFIG_ROUTER_ID))
