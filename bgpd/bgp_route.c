@@ -813,26 +813,66 @@ bgp_announce_check (struct bgp_info *ri, struct peer *peer, struct prefix *p,
     return 0;
 
   /* Do not send announces to RS-clients from the 'normal' bgp_table. */
-  if (CHECK_FLAG(peer->af_flags[afi][safi], PEER_FLAG_RSERVER_CLIENT))
+  if (CHECK_FLAG(peer->af_flags[afi][safi], PEER_FLAG_RSERVER_CLIENT)) {
+    if (BGP_DEBUG (update, UPDATE_OUT)) {
+      zlog (peer->log, LOG_DEBUG,
+		  "%s [Update:SEND:bgp_announce_check] [ %s/%d ] do not send the announcement to RS-clients from the 'normal' bgp_table",
+		  peer->host,
+		  inet_ntop(p->family, &p->u.prefix, buf, SU_ADDRSTRLEN),
+		  p->prefixlen);
+    }
     return 0;
+  }
 
   /* Do not send back route to sender. */
-  if (from == peer)
+  if (from == peer) {
+    if (BGP_DEBUG (update, UPDATE_OUT)) {
+      zlog (peer->log, LOG_DEBUG,
+		  "%s [Update:SEND:bgp_announce_check] [ %s/%d ] do not send the route back to sender",
+		  peer->host,
+		  inet_ntop(p->family, &p->u.prefix, buf, SU_ADDRSTRLEN),
+		  p->prefixlen);
+    }
     return 0;
+  }
 
   /* Aggregate-address suppress check. */
   if (ri->extra && ri->extra->suppress)
-    if (! UNSUPPRESS_MAP_NAME (filter))
+    if (! UNSUPPRESS_MAP_NAME (filter)) {
+      if (BGP_DEBUG (update, UPDATE_OUT)) {
+        zlog (peer->log, LOG_DEBUG,
+		  "%s [Update:SEND:bgp_announce_check] [ %s/%d ] do not send the announcement because of aggregate-address suppress check",
+		  peer->host,
+		  inet_ntop(p->family, &p->u.prefix, buf, SU_ADDRSTRLEN),
+		  p->prefixlen);
+      }
       return 0;
+    }
 
   /* Default route check.  */
   if (CHECK_FLAG (peer->af_sflags[afi][safi], PEER_STATUS_DEFAULT_ORIGINATE))
     {
-      if (p->family == AF_INET && p->u.prefix4.s_addr == INADDR_ANY)
+      if (p->family == AF_INET && p->u.prefix4.s_addr == INADDR_ANY) {
+        if (BGP_DEBUG (update, UPDATE_OUT)) {
+	  zlog (peer->log, LOG_DEBUG,
+		  "%s [Update:SEND:bgp_announce_check] [ %s/%d ] do not send the announcement because of default route check",
+		  peer->host,
+		  inet_ntop(p->family, &p->u.prefix, buf, SU_ADDRSTRLEN),
+		  p->prefixlen);
+        }
 	return 0;
+      }
 #ifdef HAVE_IPV6
-      else if (p->family == AF_INET6 && p->prefixlen == 0)
+      else if (p->family == AF_INET6 && p->prefixlen == 0) {
+        if (BGP_DEBUG (update, UPDATE_OUT)) {
+          zlog (peer->log, LOG_DEBUG,
+		  "%s [Update:SEND:bgp_announce_check] [ %s/%d ] do not send the announcement because of default route check",
+		  peer->host,
+		  inet_ntop(p->family, &p->u.prefix, buf, SU_ADDRSTRLEN),
+		  p->prefixlen);
+        }
 	return 0;
+      }
 #endif /* HAVE_IPV6 */
     }
 
@@ -844,8 +884,16 @@ bgp_announce_check (struct bgp_info *ri, struct peer *peer, struct prefix *p,
     transparent = 0;
 
   /* If community is not disabled check the no-export and local. */
-  if (! transparent && bgp_community_filter (peer, riattr))
+  if (! transparent && bgp_community_filter (peer, riattr)) {
+    if (BGP_DEBUG (update, UPDATE_OUT)) {
+      zlog (peer->log, LOG_DEBUG,
+		  "%s [Update:SEND:bgp_announce_check] [ %s/%d ] do not send the announcement because of either no-export or local community",
+		  peer->host,
+		  inet_ntop(p->family, &p->u.prefix, buf, SU_ADDRSTRLEN),
+		  p->prefixlen);
+    }
     return 0;
+  }
 
   /* If the attribute has originator-id and it is same as remote
      peer's id. */
@@ -854,11 +902,14 @@ bgp_announce_check (struct bgp_info *ri, struct peer *peer, struct prefix *p,
       if (IPV4_ADDR_SAME (&peer->remote_id, &riattr->extra->originator_id))
 	{
 	  if (BGP_DEBUG (filter, FILTER))  
+	    zlog (peer->log, LOG_DEBUG, "originator-id is same as remote router-id");
+          if (BGP_DEBUG (update, UPDATE_OUT)) {
 	    zlog (peer->log, LOG_DEBUG,
-		  "%s [Update:SEND] %s/%d originator-id is same as remote router-id",
+		  "%s [Update:SEND:bgp_announce_check] [ %s/%d ] do not send the announcement because originator-id is the same as the remote router-id",
 		  peer->host,
 		  inet_ntop(p->family, &p->u.prefix, buf, SU_ADDRSTRLEN),
 		  p->prefixlen);
+          }
 	  return 0;
 	}
     }
@@ -869,19 +920,29 @@ bgp_announce_check (struct bgp_info *ri, struct peer *peer, struct prefix *p,
 	  || CHECK_FLAG (peer->af_cap[afi][safi], PEER_CAP_ORF_PREFIX_SM_OLD_RCV)))
     if (peer->orf_plist[afi][safi])
       {
-	if (prefix_list_apply (peer->orf_plist[afi][safi], p) == PREFIX_DENY)
+	if (prefix_list_apply (peer->orf_plist[afi][safi], p) == PREFIX_DENY) {
+          if (BGP_DEBUG (update, UPDATE_OUT)) {
+	    zlog (peer->log, LOG_DEBUG,
+		  "%s [Update:SEND:bgp_announce_check] [ %s/%d ] do not send the announcement because of ORF prefix-list filter check",
+		  peer->host,
+		  inet_ntop(p->family, &p->u.prefix, buf, SU_ADDRSTRLEN),
+		  p->prefixlen);
+          }
           return 0;
+        }
       }
 
   /* Output filter check. */
   if (bgp_output_filter (peer, p, riattr, afi, safi) == FILTER_DENY)
     {
-      if (BGP_DEBUG (filter, FILTER))
-	zlog (peer->log, LOG_DEBUG,
-	      "%s [Update:SEND] %s/%d is filtered",
+//      if (BGP_DEBUG (filter, FILTER))
+      if (BGP_DEBUG (update, UPDATE_OUT)) {
+        zlog (peer->log, LOG_DEBUG,
+              "%s [Update:SEND:bgp_announce_check] [ %s/%d ] do not send the announcement because of output filter check",
 	      peer->host,
 	      inet_ntop(p->family, &p->u.prefix, buf, SU_ADDRSTRLEN),
 	      p->prefixlen);
+      }
       return 0;
     }
 
@@ -889,10 +950,13 @@ bgp_announce_check (struct bgp_info *ri, struct peer *peer, struct prefix *p,
   /* AS path loop check. */
   if (aspath_loop_check (riattr->aspath, peer->as))
     {
-      if (BGP_DEBUG (filter, FILTER))  
-        zlog (peer->log, LOG_DEBUG, 
-	      "%s [Update:SEND] suppress announcement to peer AS %u is AS path.",
-	      peer->host, peer->as);
+        if (BGP_DEBUG (update, UPDATE_OUT)) {
+	  zlog (peer->log, LOG_DEBUG,
+		  "%s [Update:SEND:bgp_announce_check] [ %s/%d ] do not send the announcement because of AS path loop check. peer AS %u in AS path",
+		  peer->host,
+		  inet_ntop(p->family, &p->u.prefix, buf, SU_ADDRSTRLEN),
+		  p->prefixlen, peer->as);
+        }
       return 0;
     }
 #endif /* BGP_SEND_ASPATH_CHECK */
@@ -902,11 +966,13 @@ bgp_announce_check (struct bgp_info *ri, struct peer *peer, struct prefix *p,
     {
       if (aspath_loop_check(riattr->aspath, bgp->confed_id))
 	{
-	  if (BGP_DEBUG (filter, FILTER))  
-	    zlog (peer->log, LOG_DEBUG, 
-		  "%s [Update:SEND] suppress announcement to peer AS %u is AS path.",
+            if (BGP_DEBUG (update, UPDATE_OUT)) {
+	      zlog (peer->log, LOG_DEBUG,
+		  "%s [Update:SEND:bgp_announce_check] [ %s/%d ] do not send the announcement because of CONFED loop check. peer AS %u in the AS path",
 		  peer->host,
-		  bgp->confed_id);
+		  inet_ntop(p->family, &p->u.prefix, buf, SU_ADDRSTRLEN),
+		  p->prefixlen, bgp->confed_id);
+            }
 	  return 0;
 	}      
     }
@@ -928,15 +994,31 @@ bgp_announce_check (struct bgp_info *ri, struct peer *peer, struct prefix *p,
              is already done.  So there is noting to do. */
 	  /* no bgp client-to-client reflection check. */
 	  if (bgp_flag_check (bgp, BGP_FLAG_NO_CLIENT_TO_CLIENT))
-	    if (CHECK_FLAG (peer->af_flags[afi][safi], PEER_FLAG_REFLECTOR_CLIENT))
+	    if (CHECK_FLAG (peer->af_flags[afi][safi], PEER_FLAG_REFLECTOR_CLIENT)) {
+              if (BGP_DEBUG (update, UPDATE_OUT)) {
+                zlog (peer->log, LOG_DEBUG,
+                  "%s [Update:SEND:bgp_announce_check] [ %s/%d ] do not send the announcement because of bgp reflector client check",
+                  peer->host,
+                  inet_ntop(p->family, &p->u.prefix, buf, SU_ADDRSTRLEN),
+                  p->prefixlen);
+              }
 	      return 0;
+            }
 	}
       else
 	{
 	  /* A route from a Non-client peer. Reflect to all other
 	     clients. */
-	  if (! CHECK_FLAG (peer->af_flags[afi][safi], PEER_FLAG_REFLECTOR_CLIENT))
+	  if (! CHECK_FLAG (peer->af_flags[afi][safi], PEER_FLAG_REFLECTOR_CLIENT)) {
+            if (BGP_DEBUG (update, UPDATE_OUT)) {
+	      zlog (peer->log, LOG_DEBUG,
+		  "%s [Update:SEND:bgp_announce_check] [ %s/%d ] do not send the announcement because of bgp reflector check. The target host is not a client",
+		  peer->host,
+		  inet_ntop(p->family, &p->u.prefix, buf, SU_ADDRSTRLEN),
+		  p->prefixlen);
+            }
 	    return 0;
+        }
 	}
     }
   
@@ -1096,9 +1178,25 @@ bgp_announce_check (struct bgp_info *ri, struct peer *peer, struct prefix *p,
       if (ret == RMAP_DENYMATCH)
 	{
 	  bgp_attr_flush (attr);
+          if (BGP_DEBUG (update, UPDATE_OUT)) {
+	    zlog (peer->log, LOG_DEBUG,
+		  "%s [Update:SEND:bgp_announce_check] [ %s/%d ] do not send the announcement because of a route-map deny match",
+		  peer->host,
+		  inet_ntop(p->family, &p->u.prefix, buf, SU_ADDRSTRLEN),
+		  p->prefixlen);
+          }
 	  return 0;
 	}
     }
+
+  if (BGP_DEBUG (update, UPDATE_OUT)) {
+    zlog (peer->log, LOG_DEBUG,
+		  "%s [Update:SEND:bgp_announce_check] [ %s/%d ] send the announcement",
+		  peer->host,
+		  inet_ntop(p->family, &p->u.prefix, buf, SU_ADDRSTRLEN),
+		  p->prefixlen);
+  }
+
   return 1;
 }
 
@@ -1445,6 +1543,7 @@ bgp_process_announce_selected (struct peer *peer, struct bgp_info *selected,
   struct prefix *p;
   struct attr attr;
   struct attr_extra extra;
+  char buf[SU_ADDRSTRLEN];
 
   p = &rn->p;
 
@@ -1469,10 +1568,26 @@ bgp_process_announce_selected (struct peer *peer, struct bgp_info *selected,
       case BGP_TABLE_MAIN:
       /* Announcement to peer->conf.  If the route is filtered,
          withdraw it. */
-        if (selected && bgp_announce_check (selected, peer, p, &attr, afi, safi))
+        if (selected && bgp_announce_check (selected, peer, p, &attr, afi, safi)) {
+          if (BGP_DEBUG (update, UPDATE_OUT)) {
+	    zlog (peer->log, LOG_DEBUG,
+		  "%s [ %s/%d ] [Update:SEND:bgp_process_announce_selected] announce the prefix",
+		  peer->host,
+		  inet_ntop(p->family, &p->u.prefix, buf, SU_ADDRSTRLEN),
+		  p->prefixlen);
+          }
           bgp_adj_out_set (rn, peer, p, &attr, afi, safi, selected);
-        else
+        } else {
+          if (BGP_DEBUG (update, UPDATE_OUT)) {
+	    zlog (peer->log, LOG_INFO,
+		  "%s [ %s/%d ] [Update:SEND:bgp_process_announce_selected] do NOT announce the prefix. The prefix was %s",
+		  peer->host,
+		  inet_ntop(p->family, &p->u.prefix, buf, SU_ADDRSTRLEN),
+		  p->prefixlen,
+                  selected ? "selected": "not selected");
+          }
           bgp_adj_out_unset (rn, peer, p, afi, safi);
+        }
         break;
       case BGP_TABLE_RSCLIENT:
         /* Announcement to peer->conf.  If the route is filtered, 
@@ -2593,6 +2708,7 @@ bgp_announce_table (struct peer *peer, afi_t afi, safi_t safi,
   struct bgp_info *ri;
   struct attr attr;
   struct attr_extra extra;
+  char buf[SU_ADDRSTRLEN];
 
   if (! table)
     table = (rsclient) ? peer->rib[afi][safi] : peer->bgp->rib[afi][safi];
@@ -2610,10 +2726,26 @@ bgp_announce_table (struct peer *peer, afi_t afi, safi_t safi,
 	{
          if ( (rsclient) ?
               (bgp_announce_check_rsclient (ri, peer, &rn->p, &attr, afi, safi))
-              : (bgp_announce_check (ri, peer, &rn->p, &attr, afi, safi)))
+              : (bgp_announce_check (ri, peer, &rn->p, &attr, afi, safi))) {
+
+          if (BGP_DEBUG (update, UPDATE_OUT)) {
+                zlog (peer->log, LOG_DEBUG,
+                  "%s [ %s/%d ] [Update:SEND:bgp_announce_table] announce the prefix",
+                  peer->host,
+                  inet_ntop(rn->p.family, &rn->p.u.prefix, buf, SU_ADDRSTRLEN),
+                  rn->p.prefixlen);
+            }
 	    bgp_adj_out_set (rn, peer, &rn->p, &attr, afi, safi, ri);
-	  else
+	  } else {
+            if (BGP_DEBUG (update, UPDATE_OUT)) {
+                zlog (peer->log, LOG_DEBUG,
+                  "%s [ %s/%d ] [Update:SEND:bgp_announce_table] do NOT announce the prefix peer=%p ri->peer=%p",
+                  peer->host,
+                  inet_ntop(rn->p.family, &rn->p.u.prefix, buf, SU_ADDRSTRLEN),
+                  rn->p.prefixlen, peer, ri->peer);
+            }
 	    bgp_adj_out_unset (rn, peer, &rn->p, afi, safi);
+          }
 	}
 }
 
