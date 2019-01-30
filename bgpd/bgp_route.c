@@ -902,7 +902,12 @@ bgp_announce_check (struct bgp_info *ri, struct peer *peer, struct prefix *p,
       if (IPV4_ADDR_SAME (&peer->remote_id, &riattr->extra->originator_id))
 	{
 	  if (BGP_DEBUG (filter, FILTER))  
-	    zlog (peer->log, LOG_DEBUG, "originator-id is same as remote router-id");
+	    zlog (peer->log, LOG_DEBUG,
+		  "%s [Update:SEND] %s/%d originator-id is same as remote router-id",
+		  peer->host,
+		  inet_ntop(p->family, &p->u.prefix, buf, SU_ADDRSTRLEN),
+		  p->prefixlen);
+
           if (BGP_DEBUG (update, UPDATE_OUT)) {
 	    zlog (peer->log, LOG_DEBUG,
 		  "%s [Update:SEND:bgp_announce_check] [ %s/%d ] do not send the announcement because originator-id is the same as the remote router-id",
@@ -935,7 +940,13 @@ bgp_announce_check (struct bgp_info *ri, struct peer *peer, struct prefix *p,
   /* Output filter check. */
   if (bgp_output_filter (peer, p, riattr, afi, safi) == FILTER_DENY)
     {
-//      if (BGP_DEBUG (filter, FILTER))
+      if (BGP_DEBUG (filter, FILTER))
+	zlog (peer->log, LOG_DEBUG,
+	      "%s [Update:SEND] %s/%d is filtered",
+	      peer->host,
+	      inet_ntop(p->family, &p->u.prefix, buf, SU_ADDRSTRLEN),
+	      p->prefixlen);
+
       if (BGP_DEBUG (update, UPDATE_OUT)) {
         zlog (peer->log, LOG_DEBUG,
               "%s [Update:SEND:bgp_announce_check] [ %s/%d ] do not send the announcement because of output filter check",
@@ -950,6 +961,11 @@ bgp_announce_check (struct bgp_info *ri, struct peer *peer, struct prefix *p,
   /* AS path loop check. */
   if (aspath_loop_check (riattr->aspath, peer->as))
     {
+      if (BGP_DEBUG (filter, FILTER))  
+        zlog (peer->log, LOG_DEBUG, 
+	      "%s [Update:SEND] suppress announcement to peer AS %u is AS path.",
+	      peer->host, peer->as);
+
         if (BGP_DEBUG (update, UPDATE_OUT)) {
 	  zlog (peer->log, LOG_DEBUG,
 		  "%s [Update:SEND:bgp_announce_check] [ %s/%d ] do not send the announcement because of AS path loop check. peer AS %u in AS path",
@@ -966,6 +982,12 @@ bgp_announce_check (struct bgp_info *ri, struct peer *peer, struct prefix *p,
     {
       if (aspath_loop_check(riattr->aspath, bgp->confed_id))
 	{
+	  if (BGP_DEBUG (filter, FILTER))  
+	    zlog (peer->log, LOG_DEBUG, 
+		  "%s [Update:SEND] suppress announcement to peer AS %u is AS path.",
+		  peer->host,
+		  bgp->confed_id);
+
             if (BGP_DEBUG (update, UPDATE_OUT)) {
 	      zlog (peer->log, LOG_DEBUG,
 		  "%s [Update:SEND:bgp_announce_check] [ %s/%d ] do not send the announcement because of CONFED loop check. peer AS %u in the AS path",
@@ -1286,6 +1308,14 @@ bgp_announce_check_rsclient (struct bgp_info *ri, struct peer *rsclient,
         zlog (rsclient->log, LOG_DEBUG,
              "%s [Update:SEND] suppress announcement to peer AS %u is AS path.",
              rsclient->host, rsclient->as);
+
+      if (BGP_DEBUG (update, UPDATE_OUT)) {
+        zlog (peer->log, LOG_DEBUG,
+		  "%s [Update:SEND:bgp_announce_check] [ %s/%d ] do not send the announcement because of CONFED loop check. peer AS %u in the AS path",
+		  peer->host,
+		  inet_ntop(p->family, &p->u.prefix, buf, SU_ADDRSTRLEN),
+		  p->prefixlen, bgp->confed_id);
+      }
       return 0;
     }
 #endif /* BGP_SEND_ASPATH_CHECK */
