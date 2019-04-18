@@ -933,6 +933,7 @@ stream_fifo_push (struct stream_fifo *fifo, struct stream *s)
     fifo->head = s;
      
   fifo->tail = s;
+  fifo->tail->next = NULL;
 
   fifo->count++;
 }
@@ -953,6 +954,9 @@ stream_fifo_pop (struct stream_fifo *fifo)
 	fifo->tail = NULL;
 
       fifo->count--;
+
+      /* ensure stream is scrubbed of references to this fifo */
+      s->next = NULL;
     }
 
   return s; 
