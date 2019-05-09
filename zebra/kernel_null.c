@@ -43,8 +43,6 @@ int kernel_add_ipv6 (struct prefix *a, struct rib *b) { return 0; }
 int kernel_delete_ipv6 (struct prefix *a, struct rib *b) { return 0; }
 #endif
 
-int kernel_route_rib (struct prefix *a, struct rib *old, struct rib *new) { return 0; }
-
 int kernel_add_route (struct prefix_ipv4 *a, struct in_addr *b, int c, int d)
 { return 0; }
 
