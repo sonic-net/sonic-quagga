@@ -2980,7 +2980,7 @@ rib_delete_ipv6 (int type, int flags, struct prefix_ipv6 *p,
           if (IS_ZEBRA_DEBUG_KERNEL)
             {
               zlog_debug ("Zebra route %s/%d was deleted by others from kernel",
-                         inet_ntop (AF_INET, &p->prefix, buf1, INET_ADDRSTRLEN),
+                         inet_ntop (AF_INET6, &p->prefix, buf1, INET_ADDRSTRLEN),
                          p->prefixlen);
             }
           /* This means someone else, other than Zebra, has deleted a Zebra
