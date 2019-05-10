@@ -2351,7 +2351,7 @@ rib_delete_ipv4 (int type, int flags, struct prefix_ipv4 *p,
                          p->prefixlen);
             }
           /* This means someone else, other than Zebra, has deleted
-           * a Zebra router from the kernel. We will add it back */
+           * a Zebra route from the kernel. We will add it back */
            rib_install_kernel(rn, fib);
         }
       else
