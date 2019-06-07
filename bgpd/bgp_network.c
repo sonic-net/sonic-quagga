@@ -220,6 +220,22 @@ bgp_accept (struct thread *thread)
 
   peer1 = peer_lookup (NULL, &su);
 
+
+  /*
+   * Don't allow to setup a static session for the peers, which were created as DYNAMIC.
+     It isn't supported to have a static session in dynamic range
+   */
+
+  if (peer1 && peer_dynamic_neighbor(peer1))
+  {
+      zlog_debug ("[Event] Close connection from %s. We already have such connection created as DYNAMIC.",
+		   inet_sutop (&su, buf));
+
+      close (bgp_sock);
+
+      return -1;
+  }
+
   /*
    * Close incoming connection from directly connected EBGP peers until we receive
      interface_up message from zebra
