@@ -222,13 +222,12 @@ bgp_accept (struct thread *thread)
 
 
   /*
-   * Don't allow to setup a static session for the peers, which were created as DYNAMIC.
-     It isn't supported to have a static session in dynamic range
+   * Close incoming connection from the same dynamic peer
    */
 
   if (peer1 && peer_dynamic_neighbor(peer1))
   {
-      zlog_debug ("[Event] Close connection from %s. We already have such connection created as DYNAMIC.",
+      zlog_debug ("[Event] Close connection from %s. We already have this dynamic connection",
 		   inet_sutop (&su, buf));
 
       close (bgp_sock);
