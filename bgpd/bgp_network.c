@@ -220,6 +220,21 @@ bgp_accept (struct thread *thread)
 
   peer1 = peer_lookup (NULL, &su);
 
+
+  /*
+   * Close incoming connection from the same dynamic peer
+   */
+
+  if (peer1 && peer_dynamic_neighbor(peer1))
+  {
+      zlog_debug ("[Event] Close connection from %s. We already have this dynamic connection",
+		   inet_sutop (&su, buf));
+
+      close (bgp_sock);
+
+      return -1;
+  }
+
   /*
    * Close incoming connection from directly connected EBGP peers until we receive
      interface_up message from zebra
