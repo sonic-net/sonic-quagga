@@ -56,6 +56,7 @@ extern int bgp_multiaccess_check_v4 (struct in_addr, char *);
 extern int bgp_config_write_scan_time (struct vty *);
 extern int bgp_nexthop_onlink (afi_t, struct attr *);
 extern int bgp_addr_onlink_v4 (struct in_addr *);
+extern int bgp_addr_onlink (afi_t, union sockunion *);
 extern int bgp_nexthop_self (struct attr *);
 extern void bgp_address_init (void);
 
