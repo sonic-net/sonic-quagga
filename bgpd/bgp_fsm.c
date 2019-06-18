@@ -727,15 +727,9 @@ bgp_start (struct peer *peer)
     afi = AFI_IP;
   else if (sockunion_family (&peer->su) == AF_INET6)
     afi = AFI_IP6;
-  else
-    {
-      if (BGP_DEBUG (fsm, FSM))
-        plog_err (peer->log, "%s [FSM] Unsupported address family type",
-                  peer->host);
-      return -1;
-    }
 
-  if (peer->sort == BGP_PEER_EBGP && peer->ttl == 1
+  if ((afi == AFI_IP || afi == AFI_IP6)
+      && peer->sort == BGP_PEER_EBGP && peer->ttl == 1
       && ! bgp_addr_onlink (afi, &peer->su))
     {
       if (BGP_DEBUG (fsm, FSM))

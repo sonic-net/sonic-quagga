@@ -245,14 +245,9 @@ bgp_accept (struct thread *thread)
     afi = AFI_IP;
   else if (sockunion_family (&su) == AF_INET6)
     afi = AFI_IP6;
-  else
-    {
-      zlog_err ("[Error] Unsupported address family type %d", sockunion_family (&su));
-      close (bgp_sock);
-      return -1;
-    }
 
-  if (peer1 && peer1->sort == BGP_PEER_EBGP && peer1->ttl == 1
+  if ((afi == AFI_IP || afi == AFI_IP6)
+      && peer1 && peer1->sort == BGP_PEER_EBGP && peer1->ttl == 1
       && ! bgp_addr_onlink (afi, &su))
     {
       zlog_debug ("[Event] Close connection from %s. The interface isn't ready yet",
