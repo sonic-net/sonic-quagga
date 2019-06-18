@@ -710,7 +710,7 @@ int
 bgp_start (struct peer *peer)
 {
   int status;
-  afi_t afi;
+  afi_t afi = AFI_UNSPEC;
 
   if (BGP_PEER_START_SUPPRESSED (peer))
     {
@@ -728,8 +728,7 @@ bgp_start (struct peer *peer)
   else if (sockunion_family (&peer->su) == AF_INET6)
     afi = AFI_IP6;
 
-  if ((afi == AFI_IP || afi == AFI_IP6)
-      && peer->sort == BGP_PEER_EBGP && peer->ttl == 1
+  if (afi != AFI_UNSPEC && peer->sort == BGP_PEER_EBGP && peer->ttl == 1
       && ! bgp_addr_onlink (afi, &peer->su))
     {
       if (BGP_DEBUG (fsm, FSM))

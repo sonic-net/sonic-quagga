@@ -484,6 +484,7 @@ extern const char *zserv_command_string (unsigned int command);
 #define AFI_IP                    1
 #define AFI_IP6                   2
 #define AFI_MAX                   3
+#define AFI_UNSPEC                4
 
 /* Subsequent Address Family Identifier. */
 #define SAFI_UNICAST              1

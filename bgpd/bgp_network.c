@@ -200,7 +200,7 @@ bgp_accept (struct thread *thread)
   struct peer *peer;
   struct peer *peer1;
   char buf[SU_ADDRSTRLEN];
-  afi_t afi;
+  afi_t afi = AFI_UNSPEC;
 
   /* Register accept thread. */
   accept_sock = THREAD_FD (thread);
@@ -246,8 +246,7 @@ bgp_accept (struct thread *thread)
   else if (sockunion_family (&su) == AF_INET6)
     afi = AFI_IP6;
 
-  if ((afi == AFI_IP || afi == AFI_IP6)
-      && peer1 && peer1->sort == BGP_PEER_EBGP && peer1->ttl == 1
+  if (afi != AFI_UNSPEC && peer1 && peer1->sort == BGP_PEER_EBGP && peer1->ttl == 1
       && ! bgp_addr_onlink (afi, &su))
     {
       zlog_debug ("[Event] Close connection from %s. The interface isn't ready yet",
