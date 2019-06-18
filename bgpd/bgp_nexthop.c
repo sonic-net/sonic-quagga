@@ -219,9 +219,9 @@ bgp_nexthop_onlink (afi_t afi, struct attr *attr)
   return 0;
 }
 
-/* If the IPv4 address exists on connected networks return 1. */
+/* If the address exists on connected networks return 1. */
 int
-bgp_addr_onlink_v4 (struct in_addr *addr)
+bgp_addr_onlink (afi_t afi, union sockunion *su)
 {
   struct bgp_node *rn;
 
@@ -230,13 +230,26 @@ bgp_addr_onlink_v4 (struct in_addr *addr)
     return 1;
 
   /* Lookup the address is onlink or not. */
-  rn = bgp_node_match_ipv4 (bgp_connected_table[AFI_IP], addr);
-  if (rn)
+  if (afi == AFI_IP)
     {
-      bgp_unlock_node (rn);
-      return 1;
+      rn = bgp_node_match_ipv4 (bgp_connected_table[AFI_IP], &su->sin.sin_addr);
+      if (rn)
+        {
+          bgp_unlock_node (rn);
+          return 1;
+        }
     }
-
+#ifdef HAVE_IPV6
+  else if (afi == AFI_IP6)
+    {
+      rn = bgp_node_match_ipv6 (bgp_connected_table[AFI_IP6], &su->sin6.sin6_addr);
+      if (rn)
+        {
+          bgp_unlock_node (rn);
+          return 1;
+        }
+    }
+#endif /* HAVE_IPV6 */
   return 0;
 }
 

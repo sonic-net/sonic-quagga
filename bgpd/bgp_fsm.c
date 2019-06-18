@@ -710,6 +710,7 @@ int
 bgp_start (struct peer *peer)
 {
   int status;
+  afi_t afi = AFI_UNSPEC;
 
   if (BGP_PEER_START_SUPPRESSED (peer))
     {
@@ -722,9 +723,13 @@ bgp_start (struct peer *peer)
   /*
    * Don't connect if we haven't received interface_up message from zebra
    */
-  if (peer->sort == BGP_PEER_EBGP && peer->ttl == 1
-      && sockunion_family (&peer->su) == AF_INET
-      && ! bgp_addr_onlink_v4 (&peer->su.sin.sin_addr))
+  if (sockunion_family (&peer->su) == AF_INET)
+    afi = AFI_IP;
+  else if (sockunion_family (&peer->su) == AF_INET6)
+    afi = AFI_IP6;
+
+  if (afi != AFI_UNSPEC && peer->sort == BGP_PEER_EBGP && peer->ttl == 1
+      && ! bgp_addr_onlink (afi, &peer->su))
     {
       if (BGP_DEBUG (fsm, FSM))
         plog_warn (peer->log, "%s [FSM] Delay connection to the remote peer. The interface isn't ready yet",

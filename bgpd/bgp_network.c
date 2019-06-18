@@ -200,6 +200,7 @@ bgp_accept (struct thread *thread)
   struct peer *peer;
   struct peer *peer1;
   char buf[SU_ADDRSTRLEN];
+  afi_t afi = AFI_UNSPEC;
 
   /* Register accept thread. */
   accept_sock = THREAD_FD (thread);
@@ -239,9 +240,14 @@ bgp_accept (struct thread *thread)
    * Close incoming connection from directly connected EBGP peers until we receive
      interface_up message from zebra
    */
-  if (peer1 && peer1->sort == BGP_PEER_EBGP && peer1->ttl == 1
-      && sockunion_family (&su) == AF_INET
-      && ! bgp_addr_onlink_v4 (&su.sin.sin_addr))
+
+  if (sockunion_family (&su) == AF_INET)
+    afi = AFI_IP;
+  else if (sockunion_family (&su) == AF_INET6)
+    afi = AFI_IP6;
+
+  if (afi != AFI_UNSPEC && peer1 && peer1->sort == BGP_PEER_EBGP && peer1->ttl == 1
+      && ! bgp_addr_onlink (afi, &su))
     {
       zlog_debug ("[Event] Close connection from %s. The interface isn't ready yet",
 		   inet_sutop (&su, buf));
