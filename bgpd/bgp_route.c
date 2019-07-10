@@ -552,6 +552,12 @@ bgp_info_cmp (struct bgp *bgp, struct bgp_info *new, struct bgp_info *exist,
   if (new_cluster > exist_cluster)
     return 0;
 
+  /* locally configured routes to advertise do not have su_remote */
+  if (new->peer->su_remote == NULL)
+    return 0;
+  if (exist->peer->su_remote == NULL)
+    return 1;
+
   /* 13. Neighbor address comparision. */
   ret = sockunion_cmp (new->peer->su_remote, exist->peer->su_remote);
 
