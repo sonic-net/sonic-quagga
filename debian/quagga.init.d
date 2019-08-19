@@ -283,6 +283,10 @@ case "$(cat /proc/cmdline)" in
     ;;
 esac
 
+if [[ $FAST_REBOOT == 'yes' ]]; then
+    FAST_REBOOT=$(awk '{ if ($1 <= 180) print "yes"; else print "no" }' /proc/uptime)
+fi
+
 case "$1" in
     start)
         # Try to load this necessary (at least for 2.6) module.
