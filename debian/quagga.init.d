@@ -276,16 +276,17 @@ fi
 # Check Fast-Reboot case
 case "$(cat /proc/cmdline)" in
   *fast-reboot*)
-     FAST_REBOOT='yes'
+     # check that the key exists
+     if [[ $(redis-cli -n 6 GET "FAST_REBOOT|system") == "1" ]]; then
+         FAST_REBOOT='yes'
+     else
+         FAST_REBOOT='no'
+     fi
     ;;
   *)
      FAST_REBOOT='no'
     ;;
 esac
-
-if [[ $FAST_REBOOT == 'yes' ]]; then
-    FAST_REBOOT=$(awk '{ if ($1 <= 180) print "yes"; else print "no" }' /proc/uptime)
-fi
 
 case "$1" in
     start)
