@@ -277,7 +277,7 @@ fi
 case "$(cat /proc/cmdline)" in
   *fast-reboot*)
      # check that the key exists
-     if [[ $(redis-cli -n 6 GET "FAST_REBOOT|system") == "1" ]]; then
+     if [[ $(sonic-db-cli STATE_DB GET "FAST_REBOOT|system") == "1" ]]; then
          FAST_REBOOT='yes'
      else
          FAST_REBOOT='no'
