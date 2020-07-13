@@ -662,7 +662,7 @@ bgp_nexthop_set (union sockunion *local, union sockunion *remote,
 }
 
 static unsigned int
-bgp_zebra_ifindex_by_ipv6(struct in6_addr * addr)
+bgp_zebra_ifindex_by_ipv6(struct in6_addr *addr)
 {
   struct interface *ifp;
   ifp = if_lookup_by_ipv6(addr);
@@ -844,12 +844,12 @@ bgp_zebra_announce (struct prefix *p, struct bgp_info *info, struct bgp *bgp, sa
       if (strcmp (ifindex2ifname (ifindex), "lo") == 0)
 	{
 	  /* it doesn't make sense to send a traffic to lo interface */
-	  ifindex = bgp_zebra_ifindex_by_ipv6(nexthop);
+	  ifindex = bgp_zebra_ifindex_by_ipv6 (nexthop);
 	  if (ifindex == IFINDEX_INTERNAL)
 	  {
 	    char prefix_buf[INET6_ADDRSTRLEN];
 	    char nexthop_buf[INET6_ADDRSTRLEN];
-	    zlog_err ("%s/%d Found nexthop ifindex pointed to 'lo'. Can't deduce nexthop ifindex for nexthop '%s'.",
+	    zlog_err ("Prefix '%s/%d' nexthop '%s'. Can't find nexthop ifindex.",
                 inet_ntop(AF_INET6, &p->u.prefix6, prefix_buf, sizeof(prefix_buf)),
                 p->prefixlen,
                 inet_ntop(AF_INET6, nexthop, nexthop_buf, sizeof(nexthop_buf))); 
@@ -912,12 +912,12 @@ bgp_zebra_announce (struct prefix *p, struct bgp_info *info, struct bgp *bgp, sa
  	  if (strcmp (ifindex2ifname (ifindex), "lo") == 0)
  	    {
 	      /* it doesn't make sense to send a traffic to lo interface */
-	      ifindex = bgp_zebra_ifindex_by_ipv6(nexthop);
+	      ifindex = bgp_zebra_ifindex_by_ipv6 (nexthop);
 	      if (ifindex == IFINDEX_INTERNAL)
 		{
 		  char prefix_buf[INET6_ADDRSTRLEN];
 		  char nexthop_buf[INET6_ADDRSTRLEN];
-		  zlog_err ("%s/%d Found nexthop ifindex pointed to 'lo'. Can't deduce nexthop ifindex for nexthop '%s'.",
+		  zlog_err ("Prefix '%s/%d' nexthop '%s'. Can't find nexthop ifindex.",
                         inet_ntop(AF_INET6, &p->u.prefix6, prefix_buf, sizeof(prefix_buf)),
                         p->prefixlen,
                         inet_ntop(AF_INET6, nexthop, nexthop_buf, sizeof(nexthop_buf)));
