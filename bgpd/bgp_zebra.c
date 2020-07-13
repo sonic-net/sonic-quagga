@@ -664,13 +664,12 @@ bgp_nexthop_set (union sockunion *local, union sockunion *remote,
 static unsigned int
 bgp_zebra_ifindex_by_ipv6(struct in6_addr * addr)
 {
-  unsigned int ifindex = IFINDEX_INTERNAL;
   struct interface *ifp;
   ifp = if_lookup_by_ipv6(addr);
   if (ifp)
     return ifp->ifindex;
   else
-    return ifindex;
+    return IFINDEX_INTERNAL;
 }
 
 void
