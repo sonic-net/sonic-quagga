@@ -661,6 +661,17 @@ bgp_nexthop_set (union sockunion *local, union sockunion *remote,
   return ret;
 }
 
+static unsigned int
+bgp_zebra_ifindex_by_ipv6(struct in6_addr *addr)
+{
+  struct interface *ifp;
+  ifp = if_lookup_by_ipv6(addr);
+  if (ifp)
+    return ifp->ifindex;
+  else
+    return IFINDEX_INTERNAL;
+}
+
 void
 bgp_zebra_announce (struct prefix *p, struct bgp_info *info, struct bgp *bgp, safi_t safi)
 {
@@ -829,6 +840,22 @@ bgp_zebra_announce (struct prefix *p, struct bgp_info *info, struct bgp *bgp, sa
 	  else if (info->peer->nexthop.ifp)
 	    ifindex = info->peer->nexthop.ifp->ifindex;
 	}
+
+      if (strcmp (ifindex2ifname (ifindex), "lo") == 0)
+	{
+	  /* it doesn't make sense to send a traffic to lo interface */
+	  ifindex = bgp_zebra_ifindex_by_ipv6 (nexthop);
+	  if (ifindex == IFINDEX_INTERNAL)
+	  {
+	    char prefix_buf[INET6_ADDRSTRLEN];
+	    char nexthop_buf[INET6_ADDRSTRLEN];
+	    zlog_err ("Prefix '%s/%d' nexthop '%s'. Can't find nexthop ifindex.",
+                inet_ntop(AF_INET6, &p->u.prefix6, prefix_buf, sizeof(prefix_buf)),
+                p->prefixlen,
+                inet_ntop(AF_INET6, nexthop, nexthop_buf, sizeof(nexthop_buf))); 
+	    return;
+	  }
+	}
       stream_put (bgp_nexthop_buf, &nexthop, sizeof (struct in6_addr *));
       stream_put (bgp_ifindices_buf, &ifindex, sizeof (unsigned int));
       valid_nh_count++;
@@ -882,7 +909,21 @@ bgp_zebra_announce (struct prefix *p, struct bgp_info *info, struct bgp *bgp, sa
 	    {
 	      continue;
 	    }
-
+ 	  if (strcmp (ifindex2ifname (ifindex), "lo") == 0)
+ 	    {
+	      /* it doesn't make sense to send a traffic to lo interface */
+	      ifindex = bgp_zebra_ifindex_by_ipv6 (nexthop);
+	      if (ifindex == IFINDEX_INTERNAL)
+		{
+		  char prefix_buf[INET6_ADDRSTRLEN];
+		  char nexthop_buf[INET6_ADDRSTRLEN];
+		  zlog_err ("Prefix '%s/%d' nexthop '%s'. Can't find nexthop ifindex.",
+                        inet_ntop(AF_INET6, &p->u.prefix6, prefix_buf, sizeof(prefix_buf)),
+                        p->prefixlen,
+                        inet_ntop(AF_INET6, nexthop, nexthop_buf, sizeof(nexthop_buf)));
+		  continue;
+		}
+ 	    }
           stream_put (bgp_nexthop_buf, &nexthop, sizeof (struct in6_addr *));
           stream_put (bgp_ifindices_buf, &ifindex, sizeof (unsigned int));
           valid_nh_count++;
